@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
 use App\Models\Product;
-use App\Models\User; // Untuk mendapatkan Supplier
+use App\Models\User; // Untuk mendapatkan Supplier (hanya untuk Incoming)
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str; // Untuk membuat nomor transaksi
@@ -19,14 +19,14 @@ class TransactionController extends Controller
     public function __construct(TransactionService $service)
     {
         $this->service = $service;
-        // Otorisasi: Staff membuat, Manager menyetujui, Admin/Manager melihat semua.
-        $this->middleware(['auth', 'role:admin|manager|staff']); 
+        // Otorisasi FIXED: Menggunakan role dengan Case-Sensitive yang benar.
+        $this->middleware(['auth', 'role:Admin|Manager|Staff']); 
     }
     
     // --- FUNGSIONALITAS UMUM (Admin/Manager/Staff) ---
 
     /**
-     * Menampilkan daftar transaksi yang perlu diuji (Pending, Approved).
+     * Menampilkan daftar transaksi.
      */
     public function index()
     {
@@ -41,11 +41,10 @@ class TransactionController extends Controller
     }
 
     /**
-     * Menampilkan detail transaksi (sebelum/sesudah approval).
+     * Menampilkan detail transaksi.
      */
     public function show(Transaction $transaction)
     {
-        // Pastikan relasi items dimuat
         $transaction->load(['items.product', 'creator', 'approver']); 
         
         // Otorisasi sederhana: Hanya pembuat, Manager, atau Admin yang boleh melihat
@@ -56,7 +55,7 @@ class TransactionController extends Controller
         return view('transactions.show', compact('transaction'));
     }
 
-    // --- FUNGSIONALITAS STAFF GUDANG (MEMBUAT) ---
+    // --- FUNGSIONALITAS STAFF GUDANG (MEMBUAT INCOMING) ---
 
     /**
      * Menampilkan form pembuatan Transaksi Masuk (Incoming).
@@ -75,7 +74,7 @@ class TransactionController extends Controller
      */
     public function storeIncoming(Request $request)
     {
-        // *VALIDASI KRITIS: Pastikan array items tidak kosong*
+        // VALIDASI KRITIS
         $request->validate([
             'supplier_id' => 'required|exists:users,id',
             'date' => 'required|date',
@@ -105,10 +104,22 @@ class TransactionController extends Controller
         return redirect()->route('transactions.index')->with('success', 'Transaksi Masuk dibuat, menunggu persetujuan Manager.');
     }
 
+    // --- FUNGSIONALITAS STAFF GUDANG (MEMBUAT OUTGOING) ---
+
     /**
-     * Handle POST request for Outgoing (Sale) transactions.
+     * [FUNGSI YANG HILANG] Menampilkan form pembuatan Transaksi Keluar (Outgoing/Sale).
      */
-    public function store_outgoing(Request $request)
+    public function createOutgoing()
+    {
+        // Kita hanya butuh daftar produk untuk dijual. Customer bisa diisi manual.
+        $products = Product::all();
+        return view('transactions.create_outgoing', compact('products'));
+    }
+
+    /**
+     * Menyimpan Transaksi Keluar (Outgoing/Sale) ke database.
+     */
+    public function storeOutgoing(Request $request) // *Pastikan nama fungsi ini storeOutgoing (camelCase)*
     {
         // 1. Validasi Input
         $request->validate([
@@ -124,7 +135,7 @@ class TransactionController extends Controller
         // 2. Transaksi Database (Pastikan Konsistensi)
         DB::beginTransaction();
         try {
-            // Cek Stok untuk setiap item
+            // Cek Stok untuk setiap item sebelum membuat transaksi
             foreach ($request->items as $itemData) {
                 $product = Product::find($itemData['product_id']);
                 $requestedQuantity = (int) $itemData['quantity'];
@@ -199,13 +210,12 @@ class TransactionController extends Controller
                     $product->stock += $item->quantity;
                 } elseif ($transaction->type === 'Outgoing') {
                     // Outgoing: Kurangi Stok
-                    $product->stock -= $item->quantity;
-
-                    // Cek sekali lagi (walaupun seharusnya sudah divalidasi saat store)
-                    if ($product->stock < 0) {
+                    // Validasi stok pada saat approve (sekali lagi)
+                    if ($product->stock < $item->quantity) {
                         DB::rollBack();
-                        return redirect()->back()->with('error', "Gagal menyetujui: Stok produk '{$product->name}' menjadi minus. Batalkan dan koreksi transaksi.");
+                        return redirect()->back()->with('error', "Gagal menyetujui: Stok produk '{$product->name}' ({$product->stock}) tidak mencukupi saat ini. Batalkan dan koreksi transaksi.");
                     }
+                    $product->stock -= $item->quantity;
                 }
                 $product->save();
             }
@@ -226,6 +236,37 @@ class TransactionController extends Controller
             DB::rollBack();
             return redirect()->back()
                 ->with('error', 'Gagal menyetujui transaksi dan memperbarui stok: ' . $e->getMessage());
+        }
+    }
+    
+    // --- FUNGSI REJECT (Asumsi Anda punya route reject) ---
+    /**
+     * Reject a pending transaction.
+     */
+    public function reject(Transaction $transaction)
+    {
+        // Otorisasi: Manager atau Admin
+        if (!in_array(auth()->user()->role, ['Admin', 'Manager'])) {
+            return redirect()->back()->with('error', 'Anda tidak memiliki hak akses untuk menolak transaksi.');
+        }
+
+        // Hanya bisa menolak status Pending
+        if ($transaction->status !== 'Pending') {
+            return redirect()->back()->with('error', 'Transaksi sudah disetujui atau dibatalkan sebelumnya.');
+        }
+
+        try {
+            $transaction->update([
+                'status' => 'Rejected',
+                'approved_by' => auth()->id(), // Menggunakan approved_by sebagai penanda yang menolak
+                'approved_at' => now(),
+            ]);
+
+            return redirect()->route('transactions.show', $transaction->id)
+                            ->with('success', 'Transaksi berhasil ditolak.');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Gagal menolak transaksi: ' . $e->getMessage());
         }
     }
 }

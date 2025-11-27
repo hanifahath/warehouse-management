@@ -3,126 +3,78 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
-use App\Services\ProductService;
-use App\Http\Requests\ProductStoreRequest; // Untuk Store
-use App\Http\Requests\ProductUpdateRequest; // Untuk Update (Jika berbeda)
+use App\Models\Category;
 use Illuminate\Http\Request;
+use App\Http\Requests\ProductStoreRequest;
+use App\Http\Requests\ProductUpdateRequest;
+use Illuminate\Support\Facades\Log;
 
-class ProductController extends Controller
+// PASTIKAN ProductController MEWARISI Controller DASAR LARAVEL
+class ProductController extends Controller // <--- INI PENTING!
 {
-    protected $service;
-
-    public function __construct(ProductService $service)
+    public function __construct()
     {
-        $this->service = $service;
-        
         // Otorisasi: Hanya Admin dan Manager yang boleh mengakses modul ini
-        $this->middleware(['auth', 'role:admin|manager']); 
+        $this->middleware(['auth', 'role:Admin|Manager']); 
     }
 
     /**
-     * Menampilkan daftar produk dengan filter, search, dan pagination.
+     * Tampilkan daftar produk (Index).
      */
-    public function index(Request $request)
+    public function index()
     {
-        // Logika filtering dan search harus ada di ProductService
-        $products = $this->service->listProducts(
-            $request->get('search'),
-            $request->get('category'),
-            $request->get('stock_status')
-        );
-        
-        // Memuat kategori untuk filter dropdown
-        $categories = \App\Models\Category::all(); 
-        
-        return view('products.index', compact('products', 'categories'));
+        $products = Product::with('category')->latest()->paginate(10);
+        return view('products.index', compact('products'));
     }
 
-    /**
-     * Menampilkan form pembuatan produk baru.
-     */
+    // ... (metode create, store, show, edit, update, destroy lainnya)
     public function create()
     {
-        $categories = \App\Models\Category::all(); // Ambil data kategori
+        $categories = Category::all();
         return view('products.create', compact('categories'));
     }
 
-    /**
-     * Menyimpan produk baru ke database.
-     */
     public function store(ProductStoreRequest $request)
     {
-        // Validasi sudah dilakukan oleh ProductStoreRequest
-        
-        // Data yang masuk harus menyertakan SKU dan Location
-        $data = $request->validated();
-        
-        // Default stock saat produk baru dibuat (jika tidak ada input awal)
-        $data['stock'] = 0; 
-
-        $this->service->createProduct($data);
-
-        return redirect()->route('products.index')
-                         ->with('success', 'Produk baru berhasil ditambahkan.');
+        try {
+            $product = Product::create($request->validated());
+            return redirect()->route('products.index')->with('success', 'Produk berhasil ditambahkan.');
+        } catch (\Exception $e) {
+            Log::error('Error storing product: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Gagal menyimpan produk. Cek log server.');
+        }
     }
-
-    /**
-     * Menampilkan detail produk.
-     */
+    
     public function show(Product $product)
     {
-        // Riwayat transaksi (5 transaksi terakhir)
-        $transactions = $product->transactionDetails()
-                                ->with('transaction') // Asumsi relasi ke tabel header
-                                ->latest()
-                                ->take(5)
-                                ->get();
-                                
-        return view('products.show', compact('product', 'transactions'));
+        return view('products.show', compact('product'));
     }
 
-    /**
-     * Menampilkan form edit produk.
-     */
     public function edit(Product $product)
     {
-        $categories = \App\Models\Category::all();
+        $categories = Category::all();
         return view('products.edit', compact('product', 'categories'));
     }
 
-    /**
-     * Memperbarui produk yang sudah ada.
-     */
-    public function update(ProductStoreRequest $request, Product $product) 
+    public function update(ProductUpdateRequest $request, Product $product)
     {
-        // Validasi dan otorisasi di handle oleh ProductStoreRequest
-
-        // SKU tidak boleh diubah, dan stok saat ini juga tidak boleh diubah via update ini
-        $data = $request->validated();
-        
-        // Pastikan SKU tidak ikut terupdate jika menggunakan satu Request (opsional)
-        unset($data['sku']); 
-        
-        $this->service->updateProduct($product, $data);
-
-        return redirect()->route('products.index')
-                         ->with('success', 'Data produk berhasil diperbarui.');
+        try {
+            $product->update($request->validated());
+            return redirect()->route('products.index')->with('success', 'Produk berhasil diperbarui.');
+        } catch (\Exception $e) {
+            Log::error('Error updating product: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Gagal memperbarui produk. Cek log server.');
+        }
     }
 
-    /**
-     * Menghapus produk.
-     */
     public function destroy(Product $product)
     {
-        // LOGIKA KRITIS: Pengecekan stok (sebelum memanggil Service)
-        if ($product->stock > 0) {
-            return back()->with('error', 'Gagal menghapus! Produk masih memiliki stok (' . $product->stock . ' ' . $product->unit . ').');
+        try {
+            $product->delete();
+            return redirect()->route('products.index')->with('success', 'Produk berhasil dihapus.');
+        } catch (\Exception $e) {
+            Log::error('Error deleting product: ' . $e->getMessage());
+            return back()->with('error', 'Gagal menghapus produk. Mungkin produk ini terkait dengan transaksi lain.');
         }
-        
-        // Delegasi penghapusan ke Service
-        $this->service->deleteProduct($product);
-
-        return redirect()->route('products.index')
-                         ->with('success', 'Produk berhasil dihapus.');
     }
 }

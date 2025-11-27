@@ -5,7 +5,7 @@
 </head>
 <body>
     <h2>Buat Purchase Order Baru (Role: Manager)</h2>
-    <a href="{{ route('restock.index') }}">Kembali ke Daftar PO</a>
+    <a href="{{ route('restocks.index') }}">Kembali ke Daftar PO</a>
     
     @if ($errors->any())
         <div style="color: red;">
@@ -16,7 +16,7 @@
         <div style="color: red;">{{ session('error') }}</div>
     @endif
 
-    <form action="{{ route('restock.store') }}" method="POST">
+    <form action="{{ route('restocks.store') }}" method="POST">
         @csrf
         
         <label for="supplier_id">Supplier:</label><br>
