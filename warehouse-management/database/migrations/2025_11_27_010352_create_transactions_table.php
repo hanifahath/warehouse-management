@@ -25,6 +25,9 @@ return new class extends Migration
                 ->constrained('users')
                 ->nullOnDelete(); 
 
+            // Waktu Approval (BARU DITAMBAHKAN)
+            $table->timestamp('approved_at')->nullable();
+
             // Relasi Supplier (Jika type = Incoming)
             $table->foreignId('supplier_id')
                 ->nullable()

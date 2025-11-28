@@ -13,14 +13,17 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('restock_order_id')
-                  ->constrained('restock_orders')
-                  ->cascadeOnDelete();
+                    ->constrained('restock_orders')
+                    ->cascadeOnDelete();
 
             $table->foreignId('product_id')
-                  ->constrained('products')
-                  ->cascadeOnDelete();
+                    ->constrained('products')
+                    ->cascadeOnDelete();
 
             $table->integer('quantity');
+
+            // Harga beli produk saat order dibuat (BARU DITAMBAHKAN)
+            $table->decimal('unit_price', 15, 2);
 
             $table->timestamps();
         });

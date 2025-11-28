@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class RestockItem extends Model
 {
@@ -13,20 +14,27 @@ class RestockItem extends Model
         'restock_order_id',
         'product_id',
         'quantity',
+        'unit_price', // KRITIS: Tambahkan unit_price
     ];
 
-    public function restockOrder()
+    protected $casts = [
+        'quantity' => 'integer',
+        'unit_price' => 'float',
+    ];
+
+    /**
+     * Relasi N:1 ke Header Restock Order
+     */
+    public function restockOrder(): BelongsTo
     {
         return $this->belongsTo(RestockOrder::class);
     }
-
-    public function product()
+    
+    /**
+     * Relasi N:1 ke Produk
+     */
+    public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
-    }
-
-    public function order()
-    {
-        return $this->belongsTo(RestockOrder::class, 'restock_order_id');
     }
 }

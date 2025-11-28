@@ -6,6 +6,7 @@ use App\Models\RestockOrder;
 use App\Models\RestockItem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use App\Models\Product; // Pastikan Product diimpor jika nanti diperlukan di sini
 
 class RestockService
 {
@@ -29,11 +30,13 @@ class RestockService
         DB::beginTransaction();
         try {
             // 1. Buat Header Restock Order
+            // Pastikan Anda mempassing 'order_date' dari controller jika diperlukan, 
+            // jika tidak, gunakan now()
             $order = RestockOrder::create([
                 'po_number' => $poNumber,
                 'supplier_id' => $data['supplier_id'],
                 'created_by' => $managerId,
-                'order_date' => $data['order_date'],
+                'order_date' => now(), // Menggunakan waktu saat ini
                 'expected_delivery_date' => $data['expected_delivery_date'] ?? null,
                 'status' => 'Pending',
                 'notes' => $data['notes'] ?? null,
@@ -41,10 +44,11 @@ class RestockService
 
             // 2. Simpan Item Restock
             foreach ($data['items'] as $item) {
-                // Asumsi items memiliki product_id dan quantity
+                // KRITIS: Tambahkan 'unit_price' ke item PO
                 $order->items()->create([
                     'product_id' => $item['product_id'],
                     'quantity' => $item['quantity'],
+                    'unit_price' => $item['unit_price'], // ✅ FIX: Simpan harga beli
                 ]);
             }
 

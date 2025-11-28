@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
 use App\Models\Product;
-use App\Models\User; // Untuk mendapatkan Supplier (hanya untuk Incoming)
+use App\Models\User;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str; // Untuk membuat nomor transaksi
+use Illuminate\Support\Str; 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
+use Illuminate\Http\RedirectResponse;
 
 class TransactionController extends Controller
 {
@@ -26,24 +28,50 @@ class TransactionController extends Controller
     // --- FUNGSIONALITAS UMUM (Admin/Manager/Staff) ---
 
     /**
-     * Menampilkan daftar transaksi.
+     * Menampilkan daftar transaksi dengan dukungan filter Tipe dan Role-Based.
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\View\View
      */
-    public function index()
+    public function index(Request $request): View
     {
-        // Manager dan Admin melihat semua. Staff hanya melihat miliknya.
+        // Mendapatkan tipe filter dari URL (e.g., /transactions?type=Incoming)
+        $filterType = $request->query('type');
+        
+        $query = Transaction::query();
+        $baseTitle = 'Daftar Semua Transaksi'; // Judul default
+
+        // 1. Filter Berbasis Role (Hanya Staff yang dibatasi)
         if (auth()->user()->role === 'Staff') {
-            $transactions = Transaction::where('created_by', auth()->id())->latest()->paginate(10);
-        } else {
-            $transactions = Transaction::latest()->paginate(10);
+            $query->where('created_by', auth()->id());
+            $baseTitle = 'Daftar Transaksi Saya';
         }
 
-        return view('transactions.index', compact('transactions'));
+        // 2. Filter Berbasis Tipe (dari tombol navigasi Admin/Manager)
+        if ($filterType) {
+            // Kita menggunakan 'Incoming' dan 'Outgoing' (case-sensitive) sesuai logic store Anda
+            if ($filterType === 'Incoming') {
+                $query->where('type', 'Incoming');
+                $baseTitle = 'Daftar Transaksi Masuk' . (auth()->user()->role === 'Staff' ? ' (Saya)' : '');
+            } elseif ($filterType === 'Outgoing') {
+                $query->where('type', 'Outgoing');
+                $baseTitle = 'Daftar Transaksi Keluar' . (auth()->user()->role === 'Staff' ? ' (Saya)' : '');
+            }
+        }
+
+        // Eksekusi Kueri dan Pagination
+        $transactions = $query->latest()->paginate(10);
+
+        return view('transactions.index', [
+            'transactions' => $transactions,
+            'currentFilter' => $filterType, // Penting untuk menandai tombol aktif di View
+            'title' => $baseTitle, // Judul dinamis
+        ]);
     }
 
     /**
      * Menampilkan detail transaksi.
      */
-    public function show(Transaction $transaction)
+    public function show(Transaction $transaction): View
     {
         $transaction->load(['items.product', 'creator', 'approver']); 
         
@@ -60,8 +88,13 @@ class TransactionController extends Controller
     /**
      * Menampilkan form pembuatan Transaksi Masuk (Incoming).
      */
-    public function createIncoming()
+    public function createIncoming(): View
     {
+        // Otorisasi Tambahan: Hanya Staff yang bisa mengakses form create
+        if (auth()->user()->role !== 'Staff') {
+            abort(403, 'Akses Ditolak: Hanya Staff yang bisa membuat transaksi baru.');
+        }
+
         // Dapatkan semua Supplier yang sudah Approved
         $suppliers = User::where('role', 'Supplier')->where('is_approved', true)->get();
         $products = Product::all();
@@ -72,8 +105,13 @@ class TransactionController extends Controller
     /**
      * Menyimpan Transaksi Masuk ke database (Status Pending).
      */
-    public function storeIncoming(Request $request)
+    public function storeIncoming(Request $request): RedirectResponse
     {
+         // Otorisasi: Hanya Staff
+         if (auth()->user()->role !== 'Staff') {
+            abort(403, 'Akses Ditolak.');
+        }
+
         // VALIDASI KRITIS
         $request->validate([
             'supplier_id' => 'required|exists:users,id',
@@ -107,10 +145,15 @@ class TransactionController extends Controller
     // --- FUNGSIONALITAS STAFF GUDANG (MEMBUAT OUTGOING) ---
 
     /**
-     * [FUNGSI YANG HILANG] Menampilkan form pembuatan Transaksi Keluar (Outgoing/Sale).
+     * Menampilkan form pembuatan Transaksi Keluar (Outgoing/Sale).
      */
-    public function createOutgoing()
+    public function createOutgoing(): View
     {
+        // Otorisasi Tambahan: Hanya Staff yang bisa mengakses form create
+        if (auth()->user()->role !== 'Staff') {
+            abort(403, 'Akses Ditolak: Hanya Staff yang bisa membuat transaksi baru.');
+        }
+        
         // Kita hanya butuh daftar produk untuk dijual. Customer bisa diisi manual.
         $products = Product::all();
         return view('transactions.create_outgoing', compact('products'));
@@ -119,8 +162,13 @@ class TransactionController extends Controller
     /**
      * Menyimpan Transaksi Keluar (Outgoing/Sale) ke database.
      */
-    public function storeOutgoing(Request $request) // *Pastikan nama fungsi ini storeOutgoing (camelCase)*
+    public function storeOutgoing(Request $request): RedirectResponse
     {
+        // Otorisasi: Hanya Staff
+        if (auth()->user()->role !== 'Staff') {
+            abort(403, 'Akses Ditolak.');
+        }
+
         // 1. Validasi Input
         $request->validate([
             'customer_name' => 'required|string|max:255',
@@ -187,7 +235,7 @@ class TransactionController extends Controller
     /**
      * Approve a pending transaction (Incoming or Outgoing) and update stock.
      */
-    public function approve(Transaction $transaction)
+    public function approve(Transaction $transaction): RedirectResponse
     {
         // Otorisasi: Pastikan hanya Manager atau Admin yang bisa menyetujui
         if (!in_array(auth()->user()->role, ['Admin', 'Manager'])) {
@@ -202,6 +250,7 @@ class TransactionController extends Controller
         DB::beginTransaction();
         try {
             // 1. Update Stok
+            $transaction->load('items.product'); // Pastikan relasi diload
             foreach ($transaction->items as $item) {
                 $product = $item->product;
 
@@ -210,7 +259,6 @@ class TransactionController extends Controller
                     $product->stock += $item->quantity;
                 } elseif ($transaction->type === 'Outgoing') {
                     // Outgoing: Kurangi Stok
-                    // Validasi stok pada saat approve (sekali lagi)
                     if ($product->stock < $item->quantity) {
                         DB::rollBack();
                         return redirect()->back()->with('error', "Gagal menyetujui: Stok produk '{$product->name}' ({$product->stock}) tidak mencukupi saat ini. Batalkan dan koreksi transaksi.");
@@ -243,7 +291,7 @@ class TransactionController extends Controller
     /**
      * Reject a pending transaction.
      */
-    public function reject(Transaction $transaction)
+    public function reject(Transaction $transaction): RedirectResponse
     {
         // Otorisasi: Manager atau Admin
         if (!in_array(auth()->user()->role, ['Admin', 'Manager'])) {
@@ -269,4 +317,7 @@ class TransactionController extends Controller
                 ->with('error', 'Gagal menolak transaksi: ' . $e->getMessage());
         }
     }
+    
+    // Tambahkan juga metode edit, update, dan destroy jika diperlukan oleh Staff.
+    // ...
 }

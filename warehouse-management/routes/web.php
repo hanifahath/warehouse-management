@@ -18,16 +18,14 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 */
 
 // --- RUTE LANDING PAGE (ROOT /) ---
-// Jika user belum login, tampilkan halaman welcome.
 Route::get('/', function () {
-    // Kita cek jika user sudah login, langsung ke dashboard
     if (auth()->check()) {
         return redirect()->route('dashboard');
     }
     return view('welcome');
 });
 
-// --- PENTING: RUTE LOGOUT (Harus ada di luar middleware 'auth') ---
+// --- PENTING: RUTE LOGOUT ---
 Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
     ->name('logout');
 
@@ -65,33 +63,35 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('transactions/{transaction}/reject', [TransactionController::class, 'reject'])->name('transactions.reject');
     });
 
-    // --- 4. TRANSACTION MANAGEMENT: Semua Role Melihat. Staff Membuat. ---
+    // --- 4. TRANSACTION MANAGEMENT ---
     Route::prefix('transactions')->name('transactions.')->group(function () {
-        // Melihat Transaksi - Semua Role
-        Route::get('/', [TransactionController::class, 'index'])->name('index');
         
-        // Membuat Transaksi - Hanya Staff
+        // Rute untuk MEMBUAT/MENGELOLA Transaksi - Hanya Staff yang diizinkan
         Route::middleware(['role:Staff'])->group(function () {
+            // PENTING: Rute STATIS (create) HARUS diletakkan di atas rute DINAMIS ({transaction})
+            
+            // Rute Create/Store Incoming
             Route::get('create-incoming', [TransactionController::class, 'createIncoming'])->name('create_incoming');
             Route::post('store-incoming', [TransactionController::class, 'storeIncoming'])->name('store_incoming');
             
+            // Rute Create/Store Outgoing
             Route::get('create-outgoing', [TransactionController::class, 'createOutgoing'])->name('create_outgoing');
             Route::post('store-outgoing', [TransactionController::class, 'storeOutgoing'])->name('store_outgoing');
             
-            // Edit & Delete Transaksi
+            // Rute Edit/Update/Delete (Dinamis)
             Route::get('{transaction}/edit', [TransactionController::class, 'edit'])->name('edit');
             Route::patch('{transaction}', [TransactionController::class, 'update'])->name('update');
             Route::delete('{transaction}', [TransactionController::class, 'destroy'])->name('destroy');
         });
 
-        // Detail Transaksi - Harus di akhir
+        // Rute untuk MELIHAT Transaksi - Semua Role dapat mengakses Index (untuk Filter View) dan Show
+        // Rute ini diletakkan di bawah rute statis 'create' Staff untuk menghindari penimpalan.
+        Route::get('/', [TransactionController::class, 'index'])->name('index');
         Route::get('/{transaction}', [TransactionController::class, 'show'])->name('show');
     });
     
     // --- 5. RESTOCK / PURCHASE ORDER (PO) ---
-    Route::prefix('restocks')->name('restocks.')->group(function () {
-        
-        // ** PENTING: Rute Statis HARUS di atas Rute Dinamis **
+    Route::prefix('restocks')->name('restocks.')->group(function () { 
         
         // Admin/Manager: Buat PO (Rute Statis)
         Route::middleware(['role:Admin|Manager'])->group(function () {
@@ -117,7 +117,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 });
 
-// ***************************************************************
-// *** BARIS PENTING: Memuat rute otentikasi (login, register) ***
-// ***************************************************************
 require __DIR__.'/auth.php';

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Transaction;
 use Illuminate\Support\Facades\DB;
+use App\Models\RestockOrder; // Impor RestockOrder agar tipe data jelas
 
 class TransactionService
 {
@@ -17,7 +18,8 @@ class TransactionService
     {
         // 1. Cek status: hanya transaksi Pending yang bisa diproses
         if ($transaction->status !== 'Pending') {
-            return false; // Atau throw exception
+            // Sebaiknya throw exception agar controller bisa menangkap dan menampilkan pesan spesifik
+            throw new \Exception("Transaksi tidak dalam status Pending.");
         }
 
         // 2. Mulai Database Transaction (CRITICAL!)
@@ -32,7 +34,8 @@ class TransactionService
 
             // 4. Proses Item dan Update Stok
             foreach ($transaction->items as $item) { // Pastikan relasi items() ada di Model Transaction
-                $product = $item->product; // Pastikan relasi product() ada di Model TransactionItem
+                // Muat ulang produk untuk memastikan kita bekerja dengan data stok terbaru
+                $product = $item->product->fresh(); 
                 
                 // Tentukan perubahan kuantitas
                 $quantityChange = ($transaction->type === 'Incoming') 
@@ -54,8 +57,7 @@ class TransactionService
 
         } catch (\Exception $e) {
             DB::rollBack();
-            // Di lingkungan produksi, Anda harus mencatat (log) kesalahan ini
-            // return false; 
+            // Lemparkan kembali exception yang lebih spesifik agar Controller bisa menampilkannya
             throw new \Exception("Persetujuan transaksi gagal: " . $e->getMessage());
         }
     }
@@ -89,12 +91,14 @@ class TransactionService
                 $transaction->items()->create([
                     'product_id' => $item->product_id,
                     'quantity' => $item->quantity,
-                    // Asumsi: Kita menggunakan harga beli produk saat ini
-                    'price_at_transaction' => $item->product->purchase_price, 
+                    // ✅ FIX KRITIS: Gunakan harga beli yang dicatat di RestockItem (unit_price)
+                    'price_at_transaction' => $item->unit_price, 
                 ]);
                 
                 // Update stok di tabel products
-                $item->product->increment('stock', $item->quantity); 
+                // Muat ulang produk untuk memastikan kita bekerja dengan data stok terbaru
+                $product = $item->product->fresh(); 
+                $product->increment('stock', $item->quantity); 
             }
 
             DB::commit();
@@ -105,4 +109,7 @@ class TransactionService
             throw new \Exception("Gagal membuat Transaksi Masuk dari Restock Order: " . $e->getMessage());
         }
     }
+    
+    // Asumsi: Di sini Anda akan menambahkan metode lain seperti createIncomingTransaction()
+    // dan createOutgoingTransaction() yang dipanggil dari TransactionController (transaksi manual).
 }

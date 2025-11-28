@@ -11,7 +11,7 @@ class Product extends Model
 {
     use HasFactory;
 
-    // Semua field dari Product dan ProductDetail yang diintegrasikan.
+    // Pastikan semua field yang digunakan di controller ada di sini
     protected $fillable = [
         'sku', 
         'name', 
@@ -23,7 +23,7 @@ class Product extends Model
         'stock', // Menggunakan 'stock' sebagai current_stock
         'unit', 
         'location', 
-        'image_path' // Diganti dari 'image_url' untuk konsistensi path
+        'image_path'
     ];
     
     // Cast 'stock' dan 'min_stock' ke integer
@@ -47,10 +47,17 @@ class Product extends Model
      */
     public function transactionDetails(): HasMany
     {
-        // Asumsi model detail transaksi Anda bernama TransactionItem
         return $this->hasMany(TransactionItem::class); 
     }
     
+    /**
+     * Relasi: Item Restock Order
+     */
+    public function restockItems(): HasMany
+    {
+        return $this->hasMany(RestockItem::class);
+    }
+
     /**
      * Scope untuk produk yang stoknya di bawah minimum
      */

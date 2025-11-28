@@ -8,7 +8,7 @@ use App\Services\RestockService;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use App\Models\Product; // Pastikan Product diimpor
+use App\Models\Product;
 
 class RestockController extends Controller
 {
@@ -20,17 +20,8 @@ class RestockController extends Controller
         $this->restockService = $restockService;
         $this->transactionService = $transactionService;
         
-        // Middleware Dasar: Hanya User Terautentikasi
-        $this->middleware('auth');
-
-        // Otorisasi: Admin dan Manager dapat membuat dan menyimpan.
-        $this->middleware('role:Admin|Manager')->only(['create', 'store']);
-        // Otorisasi: Admin, Manager, dan Staff dapat menerima (penerimaan barang masuk).
-        $this->middleware('role:Admin|Manager|Staff')->only(['receive']);
-        // Otorisasi: Hanya Supplier yang dapat mengkonfirmasi.
-        $this->middleware('role:Supplier')->only(['confirm']);
-        // Otorisasi: Semua yang terlibat dapat melihat daftar PO (index, show).
-        $this->middleware('role:Admin|Manager|Staff|Supplier')->only(['index', 'show']);
+        // ✅ HAPUS SEMUA MIDDLEWARE DI SINI
+        // Middleware sudah dihandle di routes/web.php
     }
 
     // --- UMUM & LISTING ---
@@ -38,7 +29,6 @@ class RestockController extends Controller
     public function index()
     {
         // Logika filter/scope untuk Manager/Supplier (hanya order mereka)
-        // Jika user adalah Supplier, filter berdasarkan supplier_id
         if (auth()->user()->role === 'Supplier') {
             $orders = RestockOrder::where('supplier_id', auth()->id())
                                 ->with(['supplier', 'creator'])
@@ -54,20 +44,13 @@ class RestockController extends Controller
         return view('restocks.index', compact('orders'));
     }
     
-    /**
-     * Tampilkan detail Purchase Order 
-     */
     public function show(RestockOrder $restockOrder)
     {
-        // Pastikan view restocks.show tersedia
         return view('restocks.show', compact('restockOrder'));
     }
     
     // --- AKSI MANAGER/ADMIN (CREATE & STORE) ---
     
-    /**
-     * Menampilkan form untuk membuat Purchase Order (PO)
-     */
     public function create()
     {
         $suppliers = User::where('role', 'Supplier')->where('is_approved', true)->get();
@@ -76,9 +59,6 @@ class RestockController extends Controller
         return view('restocks.create', compact('suppliers', 'products'));
     }
 
-    /**
-     * Menyimpan PO baru (Status: Pending)
-     */
     public function store(Request $request)
     {
         $request->validate([
@@ -107,10 +87,6 @@ class RestockController extends Controller
         return redirect()->route('restocks.index')->with('success', "Purchase Order {$poNumber} berhasil dibuat dan dikirim ke Supplier.");
     }
 
-
-    /**
-     * MANAGER/STAFF MENERIMA BARANG (LOGIKA KRITIS UPDATE STOK)
-     */
     public function receive(RestockOrder $order)
     {
         if ($order->status !== 'Confirmed by Supplier' && $order->status !== 'In Transit') {
@@ -129,9 +105,6 @@ class RestockController extends Controller
 
     // --- AKSI SUPPLIER ---
 
-    /**
-     * Supplier mengkonfirmasi PO (Status: Confirmed by Supplier)
-     */
     public function confirm(RestockOrder $order)
     {
         if ($order->supplier_id !== auth()->id()) {

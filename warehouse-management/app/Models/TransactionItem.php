@@ -3,51 +3,39 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TransactionItem extends Model
 {
     protected $fillable = [
         'transaction_id',
         'product_id',
-        'warehouse_id',
         'quantity',
+        'price_at_transaction', // KRITIS: Tambahkan harga saat transaksi
+        // 'warehouse_id' (dihapus karena menggunakan stok tunggal di Product)
     ];
 
-    public function transaction()
+    protected $casts = [
+        'quantity' => 'integer',
+        'price_at_transaction' => 'float',
+    ];
+    
+    /**
+     * Relasi N:1 ke Header Transaksi
+     */
+    public function transaction(): BelongsTo
     {
         return $this->belongsTo(Transaction::class);
     }
 
-    public function product()
+    /**
+     * Relasi N:1 ke Produk
+     */
+    public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
     }
-
-    public function warehouse()
-    {
-        return $this->belongsTo(Warehouse::class);
-    }
-
-    public function applyStock()
-    {
-        $pw = ProductWarehouse::firstOrCreate(
-            [
-                'product_id' => $this->product_id,
-                'warehouse_id' => $this->warehouse_id,
-            ],
-            [
-                'stock' => 0
-            ]
-        );
-
-        if ($this->transaction->type === 'Incoming') {
-            $pw->increment('stock', $this->quantity);
-        } else {
-            if ($pw->stock < $this->quantity) {
-                throw new \Exception("Not enough stock in warehouse");
-            }
-            $pw->decrement('stock', $this->quantity);
-        }
-    }
-
+    
+    // Relasi warehouse dan fungsi applyStock Dihapus/diabaikan
+    // karena sistem stok tunggal digunakan di Model Product.
 }

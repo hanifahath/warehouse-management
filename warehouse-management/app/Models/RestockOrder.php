@@ -16,6 +16,14 @@ class RestockOrder extends Model
         'expected_delivery_date',
         'status',
         'notes',
+        'received_at', // KRITIS: Tambahkan received_at
+        'received_by', // KRITIS: Tambahkan received_by
+    ];
+
+    protected $casts = [
+        'order_date' => 'date',
+        'expected_delivery_date' => 'date',
+        'received_at' => 'datetime',
     ];
 
     /**
@@ -42,5 +50,13 @@ class RestockOrder extends Model
     {
         // created_by menunjuk ke tabel users
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Relasi N:1 ke Penerima Order (Staff/Manager)
+     */
+    public function receiver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'received_by');
     }
 }

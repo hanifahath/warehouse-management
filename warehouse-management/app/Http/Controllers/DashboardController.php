@@ -28,9 +28,11 @@ class DashboardController extends Controller
                 'low_stock_count' => Product::lowStock()->count(),
                 'pending_transactions' => Transaction::where('status', 'Pending')->count(),
                 'pending_restocks' => RestockOrder::where('status', 'Pending')->count(),
-                // Pastikan kolom status ada di tabel users jika menggunakan status untuk approval supplier
+                
+                // PERBAIKAN: Menggunakan 'is_approved', false agar konsisten 
+                // dengan model/migration yang diasumsikan menggunakan boolean.
                 'unapproved_suppliers' => User::where('role', 'Supplier') 
-                                              ->where('status', 'Pending')->count(),
+                                             ->where('is_approved', false)->count(),
             ];
         } 
         
@@ -40,6 +42,7 @@ class DashboardController extends Controller
                 'total_transactions_today' => Transaction::where('created_by', $user->id)
                                                          ->whereDate('created_at', today())
                                                          ->count(),
+                // Asumsi status ini diatur oleh Manager/Admin setelah PO dikonfirmasi
                 'restock_to_receive' => RestockOrder::where('status', 'Confirmed by Supplier')->count(),
             ];
         }
@@ -48,7 +51,7 @@ class DashboardController extends Controller
         elseif ($role === 'Supplier') {
             $data = [
                 'pending_confirmation' => RestockOrder::where('supplier_id', $user->id)
-                                                     ->where('status', 'Pending')->count(),
+                                                      ->where('status', 'Pending')->count(),
                 'total_orders' => RestockOrder::where('supplier_id', $user->id)->count(),
             ];
         }
