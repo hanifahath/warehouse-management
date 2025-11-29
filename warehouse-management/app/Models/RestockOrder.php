@@ -11,13 +11,13 @@ class RestockOrder extends Model
     protected $fillable = [
         'po_number',
         'supplier_id',
-        'created_by',
+        // 'created_by',
         'order_date',
         'expected_delivery_date',
         'status',
         'notes',
         'received_at', // KRITIS: Tambahkan received_at
-        'received_by', // KRITIS: Tambahkan received_by
+        // 'received_by', // KRITIS: Tambahkan received_by
     ];
 
     protected $casts = [

@@ -7,7 +7,7 @@
 
     @include('shared.form-errors')
 
-    <form method="POST" action="{{ route('categories.update', $category) }}">
+    <form method="POST" action="{{ route('admin.categories.update', $category) }}">
         @csrf @method('PUT')
         <x-warehouse.card>
             <div>

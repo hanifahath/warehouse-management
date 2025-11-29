@@ -3,24 +3,36 @@
         <li><a href="{{ route('dashboard') }}" class="block hover:bg-gray-700 p-2 rounded">Dashboard</a></li>
 
         @role('Admin')
-            <li><a href="{{ route('users.index') }}" class="block hover:bg-gray-700 p-2 rounded">Users</a></li>
-            <li><a href="{{ route('products.index') }}" class="block hover:bg-gray-700 p-2 rounded">Products</a></li>
-            <li><a href="{{ route('categories.index') }}" class="block hover:bg-gray-700 p-2 rounded">Categories</a></li>
+            <!-- Admin Section -->
+            <li><a href="{{ route('admin.users.index') }}" class="block hover:bg-gray-700 p-2 rounded">Users</a></li>
+            <!-- PERBAIKAN: Menggunakan 'admin.products.index' -->
+            <li><a href="{{ route('admin.products.index') }}" class="block hover:bg-gray-700 p-2 rounded">Products</a></li>
+            <!-- PERBAIKAN: Menggunakan 'admin.categories.index' -->
+            <li><a href="{{ route('admin.categories.index') }}" class="block hover:bg-gray-700 p-2 rounded">Categories</a></li>
+            <li><a href="{{ route('restocks.create') }}" class="block hover:bg-gray-700 p-2 rounded">Create Restock Order</a></li>
         @endrole
 
         @role('Manager')
-            <li><a href="{{ route('reports.inventory') }}" class="block hover:bg-gray-700 p-2 rounded">Reports</a></li>
-            <li><a href="{{ route('transactions.index') }}" class="block hover:bg-gray-700 p-2 rounded">Transactions</a></li>
-            <li><a href="{{ route('restocks.index') }}" class="block hover:bg-gray-700 p-2 rounded">Restocks</a></li>
+            <!-- Manager Section -->
+            <li><a href="{{ route('manager.reports.inventory') }}" class="block hover:bg-gray-700 p-2 rounded">Reports</a></li>
+            <!-- PERBAIKAN: Menggunakan 'staff.transactions.index' karena route ini berada di luar grup manager -->
+            <li><a href="{{ route('staff.transactions.index') }}" class="block hover:bg-gray-700 p-2 rounded">Transactions</a></li>
+            <!-- PERBAIKAN: Menggunakan 'restocks.create' untuk membuat pesanan restock -->
+            <li><a href="{{ route('restocks.create') }}" class="block hover:bg-gray-700 p-2 rounded">Create Restock Order</a></li>
+            <li><a href="{{ route('admin.products.index') }}" class="block hover:bg-gray-700 p-2 rounded">Products (CRUD)</a></li>
         @endrole
 
         @role('Staff')
-            <li><a href="{{ route('transactions.create_incoming') }}" class="block hover:bg-gray-700 p-2 rounded">Incoming</a></li>
-            <li><a href="{{ route('transactions.create_outgoing') }}" class="block hover:bg-gray-700 p-2 rounded">Outgoing</a></li>
+            <!-- Staff Section -->
+            <li><a href="{{ route('staff.transactions.index') }}" class="block hover:bg-gray-700 p-2 rounded">All Transactions</a></li>
+            <li><a href="{{ route('staff.transactions.create_incoming') }}" class="block hover:bg-gray-700 p-2 rounded">Incoming Stock</a></li>
+            <li><a href="{{ route('staff.transactions.create_outgoing') }}" class="block hover:bg-gray-700 p-2 rounded">Outgoing Stock</a></li>
+            <li><a href="{{ route('supplier.restocks.index') }}" class="block hover:bg-gray-700 p-2 rounded">Receive Restock</a></li>
         @endrole
 
         @role('Supplier')
-            <li><a href="{{ route('restocks.index') }}" class="block hover:bg-gray-700 p-2 rounded">Restock Orders</a></li>
+            <!-- Supplier Section -->
+            <li><a href="{{ route('supplier.restocks.index') }}" class="block hover:bg-gray-700 p-2 rounded">My Restock Orders</a></li>
         @endrole
     </ul>
 </aside>

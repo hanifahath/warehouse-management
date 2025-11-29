@@ -7,7 +7,7 @@
 
     @include('shared.form-errors')
 
-    <form method="POST" action="{{ route('products.update', $product) }}" enctype="multipart/form-data">
+    <form method="POST" action="{{ route('admin.products.update', $product) }}" enctype="multipart/form-data">
         @csrf @method('PUT')
         <x-warehouse.card>
             <div class="grid grid-cols-2 gap-4">

@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Staff;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\TransactionStoreRequest;
 use App\Http\Requests\TransactionUpdateRequest;
 use App\Models\Transaction;
@@ -13,15 +14,20 @@ use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
 use DB;
-use App\Services\InventoryService;
+use App\Services\InventoryService; // Pastikan ini diimpor dengan benar!
 
 class TransactionController extends Controller
 {
-    protected $service;
+    // Menggunakan nama inventory agar konsisten dengan penggunaan di method approve
+    protected $inventory;
 
-    public function __construct($service) // tetap inject service jika ada
+    // PERBAIKAN UTAMA: Type-hint InventoryService pada constructor
+    public function __construct(InventoryService $inventory)
     {
-        $this->service = $service;
+        // Laravel sekarang tahu harus menginstansiasi class App\Services\InventoryService
+        $this->inventory = $inventory;
+        
+        // Perbaiki property usage di sini agar menggunakan $this->inventory
         $this->middleware(['auth', 'role:Admin|Manager|Staff']);
     }
 
@@ -99,7 +105,7 @@ class TransactionController extends Controller
 
             DB::commit();
 
-            return redirect()->route('transactions.index')->with('success', 'Transaksi Masuk dibuat, menunggu persetujuan Manager.');
+            return redirect()->route('staff.transactions.index')->with('success', 'Transaksi Masuk dibuat, menunggu persetujuan Manager.');
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->withInput()->with('error', 'Terjadi kesalahan saat menyimpan transaksi: ' . $e->getMessage());
@@ -141,7 +147,7 @@ class TransactionController extends Controller
 
             DB::commit();
 
-            return redirect()->route('transactions.show', $transaction->id)
+            return redirect()->route('staff.transactions.show', $transaction->id)
                 ->with('success', 'Transaksi Keluar berhasil dibuat dan menunggu persetujuan.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -162,11 +168,12 @@ class TransactionController extends Controller
                     : -$item->quantity;
 
                 // Panggil service untuk update stok + catat StockMovement
+                // Penggunaan $this->inventory sekarang sesuai dengan constructor yang baru.
                 $this->inventory->adjustStock(
                     $item->product,
                     $delta,
                     strtolower($transaction->type), // 'incoming' atau 'outgoing'
-                    $transaction                   // reference untuk audit trail
+                    $transaction 
                 );
             }
 
@@ -177,7 +184,7 @@ class TransactionController extends Controller
             ]);
 
             DB::commit();
-            return redirect()->route('transactions.show', $transaction->id)
+            return redirect()->route('staff.transactions.show', $transaction->id)
                 ->with('success', 'Transaksi berhasil disetujui.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -202,7 +209,7 @@ class TransactionController extends Controller
                 'approved_at' => now(),
             ]);
 
-            return redirect()->route('transactions.show', $transaction->id)
+            return redirect()->route('staff.transactions.show', $transaction->id)
                 ->with('success', 'Transaksi berhasil ditolak.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Gagal menolak transaksi: ' . $e->getMessage());
@@ -227,7 +234,7 @@ class TransactionController extends Controller
             }
 
             DB::commit();
-            return redirect()->route('transactions.show', $transaction->id)->with('success', 'Transaksi berhasil diperbarui.');
+            return redirect()->route('staff.transactions.show', $transaction->id)->with('success', 'Transaksi berhasil diperbarui.');
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->withInput()->with('error', 'Gagal memperbarui transaksi: ' . $e->getMessage());

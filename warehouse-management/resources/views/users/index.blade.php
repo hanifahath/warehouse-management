@@ -3,50 +3,72 @@
 @section('title', 'User Management')
 
 @section('content')
-    <h1 class="text-2xl font-bold mb-4">Users</h1>
+    <h1 class="text-3xl font-extrabold text-gray-900 mb-6">Users Management</h1>
 
+    {{-- Assuming x-warehouse.card provides good padding and shadows --}}
     <x-warehouse.card>
-        <div class="mb-4">
-            <a href="{{ route('users.create') }}">
-                <x-warehouse.button type="primary">Create New User</x-warehouse.button>
+        <div class="mb-6 flex justify-between items-center">
+            <a href="{{ route('admin.users.create') }}">
+                {{-- Using a modern Tailwind button style --}}
+                <x-warehouse.button type="primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                    </svg>
+                    Create New User
+                </x-warehouse.button>
             </a>
+            {{-- Optional Search or Filter components here --}}
         </div>
 
-        <table class="w-full border-collapse">
-            <thead>
-                <tr class="bg-gray-200">
-                    <th class="p-2">Name</th>
-                    <th class="p-2">Email</th>
-                    <th class="p-2">Role</th>
-                    <th class="p-2">Approved</th>
-                    <th class="p-2">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($users as $user)
-                    <tr class="border-b">
-                        <td class="p-2">{{ $user->name }}</td>
-                        <td class="p-2">{{ $user->email }}</td>
-                        <td class="p-2">{{ $user->role }}</td>
-                        <td class="p-2">
-                            <x-warehouse.badge status="{{ $user->is_approved ? 'ok' : 'low' }}" />
-                        </td>
-                        <td class="p-2 flex space-x-2">
-                            <a href="{{ route('users.show', $user) }}" class="text-blue-600 hover:underline">View</a>
-                            <a href="{{ route('users.edit', $user) }}" class="text-yellow-600 hover:underline">Edit</a>
-                            <form method="POST" action="{{ route('users.destroy', $user) }}">
-                                @csrf @method('DELETE')
-                                <button type="submit" class="text-red-600 hover:underline"
-                                        onclick="return confirm('Delete this user?')">
-                                    Delete
-                                </button>
-                            </form>
-                        </td>
+        <div class="overflow-x-auto bg-white rounded-lg shadow-sm">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
+                        <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
+                        <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
+                        <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Approved</th>
+                        <th class="p-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
-                @endforeach
-            </tbody>
-        </table>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    @foreach($users as $user)
+                        <tr class="hover:bg-gray-50 transition duration-150 ease-in-out">
+                            <td class="p-3 text-sm font-medium text-gray-900">{{ $user->name }}</td>
+                            <td class="p-3 text-sm text-gray-600">{{ $user->email }}</td>
+                            <td class="p-3 text-sm text-gray-600">{{ $user->role }}</td>
+                            <td class="p-3 text-sm">
+                                <x-warehouse.badge status="{{ $user->is_approved ? 'ok' : 'low' }}" />
+                            </td>
+                            <td class="p-3 flex items-center space-x-2">
+                                <a href="{{ route('admin.users.show', $user) }}" class="text-blue-600 hover:text-blue-800 transition duration-150 ease-in-out font-medium">View</a>
+                                <span class="text-gray-300">|</span>
+                                <a href="{{ route('admin.users.edit', $user) }}" class="text-yellow-600 hover:text-yellow-800 transition duration-150 ease-in-out font-medium">Edit</a>
+                                <span class="text-gray-300">|</span>
+                                
+                                {{-- FORM HAPUS --}}
+                                <form id="delete-form-{{ $user->id }}" method="POST" action="{{ route('admin.users.destroy', $user) }}" class="inline-block">
+                                    @csrf @method('DELETE')
+                                    
+                                    {{-- Tombol dengan INLINE JAVASCRIPT --}}
+                                    <button type="button" 
+                                            class="text-red-600 hover:text-red-800 transition duration-150 ease-in-out font-medium"
+                                            onclick="event.preventDefault(); 
+                                                     if (confirm('Apakah Anda yakin ingin menghapus pengguna: {{ $user->name }}? \n\nTindakan ini tidak dapat dibatalkan.')) { 
+                                                        document.getElementById('delete-form-{{ $user->id }}').submit(); 
+                                                     }">
+                                        Delete
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
 
         @include('shared.pagination', ['paginator' => $users])
     </x-warehouse.card>
 @endsection
+
+{{-- MENGHAPUS @section('scripts') KARENA LOGIKA SUDAH INLINE --}}

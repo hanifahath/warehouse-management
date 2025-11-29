@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Supplier;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\RestockStoreRequest;
 use App\Http\Requests\RestockUpdateRequest;
 use Illuminate\Http\Request;
@@ -50,7 +51,7 @@ class RestockController extends Controller
             $order = RestockOrder::create([
                 'po_number' => $poNumber,
                 'supplier_id' => $data['supplier_id'],
-                'created_by' => auth()->id(),
+                // 'created_by' => auth()->id(),
                 'order_date' => $data['order_date'],
                 'expected_delivery_date' => $data['expected_delivery_date'] ?? null,
                 'notes' => $data['notes'] ?? null,
@@ -70,7 +71,7 @@ class RestockController extends Controller
 
             DB::commit();
 
-            return redirect()->route('restocks.index')->with('success', 'Purchase Order berhasil dibuat.');
+            return redirect()->route('supplier.restocks.index')->with('success', 'Purchase Order berhasil dibuat.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error($e->getMessage());
@@ -111,7 +112,7 @@ class RestockController extends Controller
             $restockOrder->update([
                 'status'      => 'Received',
                 'received_at' => now(),
-                'received_by' => auth()->id(),
+                // 'received_by' => auth()->id(),
             ]);
 
             // Gunakan relasi items (pastikan RestockOrder->items relasi benar)
@@ -174,7 +175,7 @@ class RestockController extends Controller
             }
 
             DB::commit();
-            return redirect()->route('restocks.show', $restockOrder->id)->with('success', 'Purchase Order berhasil diperbarui.');
+            return redirect()->route('supplier.restocks.show', $restockOrder->id)->with('success', 'Purchase Order berhasil diperbarui.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error($e->getMessage());

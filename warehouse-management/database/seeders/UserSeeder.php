@@ -5,54 +5,72 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role; // PENTING: Import model Role Spatie
 
 class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. ADMIN (Full Access) - is_approved default TRUE
-        User::create([
+        // 1. PASTIKAN ROLE DIBUAT DAHULU di tabel 'roles'
+        // Jika sudah ada, tidak akan dibuat ulang (firstOrCreate)
+        $roleAdmin = Role::firstOrCreate(['name' => 'Admin']);
+        $roleManager = Role::firstOrCreate(['name' => 'Manager']);
+        $roleStaff = Role::firstOrCreate(['name' => 'Staff']);
+        $roleSupplier = Role::firstOrCreate(['name' => 'Supplier']);
+
+
+        // --- 2. USER ADMIN (Full Access) ---
+        $admin = User::create([
             'name' => 'Admin User',
             'email' => 'admin@example.com',
             'password' => Hash::make('password'),
-            'role' => 'Admin',
+            'role' => 'Admin', // (Opsional) Tetap isi kolom kustom jika Anda membutuhkannya
             'is_approved' => true, 
         ]);
+        // BARIS PENTING: Menautkan Role ke User (mengisi tabel model_has_roles)
+        $admin->assignRole($roleAdmin);
 
-        // 2. MANAGER (Approve Transactions, Create Restock) - is_approved default TRUE
-        User::create([
+
+        // --- 3. MANAGER ---
+        $manager = User::create([
             'name' => 'Manager User',
             'email' => 'manager@example.com',
             'password' => Hash::make('password'),
             'role' => 'Manager',
             'is_approved' => true,
         ]);
+        $manager->assignRole($roleManager);
         
-        // 3. STAFF GUDANG (Create Transactions) - is_approved default TRUE
-        User::create([
+        // --- 4. STAFF GUDANG ---
+        $staff = User::create([
             'name' => 'Staff Gudang',
             'email' => 'staff@example.com',
             'password' => Hash::make('password'),
             'role' => 'Staff',
             'is_approved' => true,
         ]);
+        $staff->assignRole($roleStaff);
         
-        // 4. SUPPLIER AKTIF (Sudah disetujui Admin) - Untuk pengujian Restock
-        User::create([
+        // --- 5. SUPPLIER AKTIF ---
+        $supplierA = User::create([
             'name' => 'Supplier A (Approved)',
             'email' => 'supplier_a@example.com',
             'password' => Hash::make('password'),
             'role' => 'Supplier',
             'is_approved' => true, 
         ]);
+        $supplierA->assignRole($roleSupplier);
         
-        // 5. SUPPLIER PENDING (Perlu Approval Admin) - Untuk pengujian Manajemen Pengguna Admin
-        User::create([
+        // --- 6. SUPPLIER PENDING ---
+        $supplierB = User::create([
             'name' => 'Supplier B (Pending)',
             'email' => 'supplier_b@example.com',
             'password' => Hash::make('password'),
             'role' => 'Supplier',
             'is_approved' => false, 
         ]);
+        $supplierB->assignRole($roleSupplier);
+        
+        $this->command->info('Roles and users successfully seeded and linked to Spatie.');
     }
 }

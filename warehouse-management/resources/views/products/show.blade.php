@@ -53,7 +53,7 @@
     @role('Manager')
         @if($product->stock < $product->min_stock)
             <div class="mt-4">
-                <form method="POST" action="{{ route('restocks.createFromProduct', $product) }}">
+                <form method="POST" action="{{ route('supplier.restocks.createFromProduct', $product) }}">
                     @csrf
                     <x-warehouse.button type="primary">
                         Create Restock Order

@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Http\Requests\CategoryStoreRequest;
 use App\Http\Requests\CategoryUpdateRequest;
@@ -31,7 +32,7 @@ class CategoryController extends Controller
 
         Category::create($request->validated());
 
-        return redirect()->route('categories.index')->with('success', 'Kategori baru berhasil ditambahkan.');
+        return redirect()->route('admin.categories.index')->with('success', 'Kategori baru berhasil ditambahkan.');
     }
 
     public function show(Category $category)
@@ -52,7 +53,7 @@ class CategoryController extends Controller
 
         $category->update($request->validated());
 
-        return redirect()->route('categories.index')->with('success', 'Kategori berhasil diperbarui.');
+        return redirect()->route('admin.categories.index')->with('success', 'Kategori berhasil diperbarui.');
     }
 
     public function destroy(Category $category)
@@ -64,6 +65,6 @@ class CategoryController extends Controller
         }
 
         $category->delete();
-        return redirect()->route('categories.index')->with('success', 'Kategori berhasil dihapus.');
+        return redirect()->route('admin.categories.index')->with('success', 'Kategori berhasil dihapus.');
     }
 }

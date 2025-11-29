@@ -3,54 +3,99 @@
 @section('title', 'Product List')
 
 @section('content')
-    <h1 class="text-2xl font-bold mb-4">Product List</h1>
+    <div class="flex justify-between items-center mb-4">
+        <h1 class="text-2xl font-bold">Product List</h1>
+        
+        @role('Admin|Manager')
+        <a href="{{ route('admin.products.create') }}" 
+           class="bg-indigo-600 hover:bg-indigo-700 text-black font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105">
+            <i class="fas fa-plus mr-2"></i> Tambah Produk Baru
+        </a>
+        @endrole
+    </div>
 
-    {{-- Search & Filter --}}
-    @include('shared.search-bar')
-    @include('shared.filter', ['filters' => ['Category', 'Stock Status', 'Sort']])
+    {{-- Search & Filter Form --}}
+    {{-- Form ini akan mengirimkan parameter GET untuk filter dan search --}}
+    <form method="GET" action="{{ route('admin.products.index') }}" class="space-y-4">
+        
+        {{-- Search Bar --}}
+        @include('shared.search-bar')
+        
+        {{-- Filter Section (menggunakan $categories) --}}
+        {{-- Catatan: Variabel $categories harus dikirim dari Controller --}}
+        @include('shared.filter', ['filters' => ['Category', 'Stock Status', 'Sort'], 'categories' => $categories])
+        
+        <div class="flex space-x-2">
+            <x-warehouse.button type="secondary" class="bg-indigo-600 text-white hover:bg-indigo-700">
+                Apply Filters
+            </x-warehouse.button>
+            <a href="{{ route('admin.products.index') }}" class="inline-block">
+                <x-warehouse.button type="outline">
+                    Reset
+                </x-warehouse.button>
+            </a>
+        </div>
+    </form>
 
-    <x-warehouse.card>
-        <table class="w-full border-collapse">
-            <thead>
-                <tr class="bg-gray-200">
-                    <th class="p-2">SKU</th>
-                    <th class="p-2">Name</th>
-                    <th class="p-2">Category</th>
-                    <th class="p-2">Stock</th>
-                    <th class="p-2">Location</th>
-                    <th class="p-2">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($products as $product)
-                    <tr class="border-b">
-                        <td class="p-2">{{ $product->sku }}</td>
-                        <td class="p-2">{{ $product->name }}</td>
-                        <td class="p-2">{{ $product->category->name }}</td>
-                        <td class="p-2">
-                            <x-warehouse.badge 
-                                status="{{ $product->stock < $product->min_stock ? 'low' : 'ok' }}" />
-                            {{ $product->stock }}
-                        </td>
-                        <td class="p-2">{{ $product->location }}</td>
-                        <td class="p-2 flex space-x-2">
-                            <a href="{{ route('products.show', $product) }}" 
-                               class="text-blue-600 hover:underline">View</a>
-                            <a href="{{ route('products.edit', $product) }}" 
-                               class="text-yellow-600 hover:underline">Edit</a>
-                            <form method="POST" action="{{ route('products.destroy', $product) }}">
-                                @csrf @method('DELETE')
-                                <button type="submit" 
-                                        class="text-red-600 hover:underline"
-                                        onclick="return confirm('Delete this product?')">
-                                    Delete
-                                </button>
-                            </form>
-                        </td>
+    <x-warehouse.card class="mt-4">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead>
+                    <tr class="bg-gray-200 text-left text-sm font-semibold text-gray-600">
+                        <th class="p-3">SKU</th>
+                        <th class="p-3">Name</th>
+                        <th class="p-3">Category</th>
+                        <th class="p-3">Stock</th>
+                        <th class="p-3">Location</th>
+                        <th class="p-3">Actions</th>
                     </tr>
-                @endforeach
-            </tbody>
-        </table>
-        @include('shared.pagination', ['paginator' => $products])
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    @forelse($products as $product)
+                        <tr class="hover:bg-gray-50 transition duration-150">
+                            <td class="p-3 whitespace-nowrap">{{ $product->sku }}</td>
+                            <td class="p-3 whitespace-nowrap">{{ $product->name }}</td>
+                            <td class="p-3 whitespace-nowrap">{{ $product->category->name }}</td>
+                            <td class="p-3 whitespace-nowrap">
+                                @php
+                                    $status = $product->stock < $product->min_stock ? 'low' : 'ok';
+                                @endphp
+                                <x-warehouse.badge status="{{ $status }}">
+                                    {{ $product->stock }}
+                                </x-warehouse.badge>
+                            </td>
+                            <td class="p-3 whitespace-nowrap">{{ $product->location }}</td>
+                            <td class="p-3 flex space-x-2 whitespace-nowrap">
+                                <a href="{{ route('admin.products.show', $product) }}" 
+                                   class="text-blue-600 hover:text-blue-800 transition">View</a>
+                                
+                                @role('Admin')
+                                    <a href="{{ route('admin.products.edit', $product) }}" 
+                                       class="text-yellow-600 hover:text-yellow-800 transition">Edit</a>
+                                    
+                                    <form method="POST" action="{{ route('admin.products.destroy', $product) }}" onsubmit="return confirm('Are you sure you want to delete {{ $product->name }}?');">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="text-red-600 hover:text-red-800 transition">
+                                            Delete
+                                        </button>
+                                    </form>
+                                @endrole
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="text-center p-4 text-gray-500">
+                                No products found matching your criteria.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="mt-4">
+            {{ $products->links('shared.pagination') }} 
+            {{-- Menggunakan blade pagination custom --}}
+        </div>
     </x-warehouse.card>
 @endsection

@@ -32,9 +32,25 @@ class RestockStoreRequest extends FormRequest
     {
         return [
             'supplier_id.required' => 'Supplier wajib dipilih.',
-            'items.required' => 'Daftar item wajib diisi.',
             'items.*.product_id.exists' => 'Produk tidak ditemukan.',
             'items.*.quantity.min' => 'Kuantitas minimal 1.',
+            'items.required' => 'Anda harus memesan setidaknya satu produk.',
+            'items.*.product_id.required' => 'Produk pada baris :attribute harus dipilih.',
+            'items.*.unit_price.required' => 'Harga satuan pada baris :attribute wajib diisi.',
+            'items.*.unit_price.min' => 'Harga satuan pada baris :attribute tidak boleh negatif.',
+        ];
+    }
+
+    /**
+     * Tentukan custom attributes agar pesan error lebih spesifik
+     */
+    public function attributes()
+    {
+        // Baris :attribute di atas akan diganti dengan nomor baris
+        return [
+            'items.*.product_id' => 'item', 
+            'items.*.unit_price' => 'item',
+            'items.*.quantity' => 'item',
         ];
     }
 }
