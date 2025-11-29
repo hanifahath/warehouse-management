@@ -59,4 +59,9 @@ class Transaction extends Model
     {
         return $this->belongsTo(User::class, 'approved_by');
     }
+
+    public function stockMovements()
+    {
+        return $this->morphMany(StockMovement::class, 'reference');
+    }
 }

@@ -65,4 +65,14 @@ class Product extends Model
     {
         return $query->whereColumn('stock', '<=', 'min_stock');
     }
+
+    public function setSkuAttribute($value)
+    {
+        $this->attributes['sku'] = strtoupper($value);
+    }
+
+    public function getSellingPriceFormattedAttribute()
+    {
+        return number_format($this->selling_price, 2, ',', '.');
+    }
 }

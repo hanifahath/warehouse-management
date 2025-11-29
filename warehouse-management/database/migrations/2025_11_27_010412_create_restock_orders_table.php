@@ -10,31 +10,15 @@ return new class extends Migration
     {
         Schema::create('restock_orders', function (Blueprint $table) {
             $table->id();
-
-            $table->string('po_number')->unique();
-
-            $table->foreignId('supplier_id')->constrained('users')->cascadeOnDelete(); // Constrained ke users.id
-            $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
-
+            $table->string('po_number')->unique();            // auto-generated
+            $table->foreignId('supplier_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
             $table->date('order_date');
             $table->date('expected_delivery_date')->nullable();
-
-            // Penerimaan Order (BARU DITAMBAHKAN)
-            $table->foreignId('received_by')
-                ->nullable()
-                ->constrained('users')
-                ->nullOnDelete();
-            $table->timestamp('received_at')->nullable();
-
-            $table->enum('status', [
-                'Pending',
-                'Confirmed by Supplier',
-                'In Transit',
-                'Received'
-            ])->default('Pending');
-
+            $table->string('status')->default('Pending');     // Pending, Confirmed, In Transit, Received
             $table->text('notes')->nullable();
-
+            $table->timestamp('received_at')->nullable();
+            $table->foreignId('received_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamps();
         });
     }

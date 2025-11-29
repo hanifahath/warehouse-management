@@ -3,32 +3,38 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ProductStoreRequest extends FormRequest
 {
-    public function authorize(): bool
+    public function authorize()
     {
-        // Hanya Admin dan Manager yang boleh membuat/mengedit produk
-        return auth()->user()->hasRole(['admin', 'manager']); 
+        return $this->user() && in_array($this->user()->role, ['Admin', 'Manager']);
     }
 
-    public function rules(): array
+    public function rules()
     {
-        $productId = $this->route('product')->id ?? null;
-        
         return [
-            'name' => 'required|string|max:255',
-            // SKU harus unik, kecuali saat edit
-            'sku' => 'required|string|unique:products,sku,' . $productId, 
-            'category_id' => 'required|integer|exists:categories,id',
-            'purchase_price' => 'required|numeric|min:0',
-            'selling_price' => 'required|numeric|min:0',
-            'unit' => 'required|string|max:50',
-            'min_stock' => 'required|integer|min:0',
-            'location' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'image_path' => 'nullable|string',
-            // stock tidak diinput saat create, di-handle di service jika ada nilai awal
+            'name' => ['required', 'string', 'max:255'],
+            'sku' => ['required', 'string', 'max:100', 'alpha_dash', 'unique:products,sku'],
+            'category_id' => ['required', 'integer', 'exists:categories,id'],
+            'description' => ['nullable', 'string'],
+            'purchase_price' => ['required', 'numeric', 'min:0'],
+            'selling_price' => ['required', 'numeric', 'min:0'],
+            'min_stock' => ['required', 'integer', 'min:0'],
+            'current_stock' => ['required', 'integer', 'min:0'],
+            'unit' => ['required', 'string', 'max:50'],
+            'rack_location' => ['nullable', 'string', 'max:255'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ];
+    }
+
+    public function messages()
+    {
+        return [
+            'sku.unique' => 'SKU sudah digunakan. Gunakan SKU lain yang unik.',
+            'image.image' => 'File harus berupa gambar.',
+            'image.max' => 'Ukuran gambar maksimal 2MB.',
         ];
     }
 }

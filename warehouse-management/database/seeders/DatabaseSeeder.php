@@ -11,12 +11,12 @@ class DatabaseSeeder extends Seeder
         $this->call([
             UserSeeder::class,
             CategorySeeder::class,
-            SupplierSeeder::class,
             ProductSeeder::class,
             RestockOrderSeeder::class,
             RestockItemSeeder::class,
             TransactionSeeder::class,
             TransactionItemSeeder::class,
+            StockMovementSeeder::class, // tambahan audit trail
         ]);
     }
 }

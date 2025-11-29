@@ -2,20 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\ProfileController; 
-use App\Http\Controllers\ProductController;
-use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\RestockController;
-use App\Http\Controllers\TransactionController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\Auth\AuthenticatedSessionController; 
-
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-*/
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
 
 // --- RUTE LANDING PAGE (ROOT /) ---
 Route::get('/', function () {
@@ -29,91 +17,90 @@ Route::get('/', function () {
 Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
     ->name('logout');
 
-
 Route::middleware(['auth', 'verified'])->group(function () {
-    
-    // Rute Profil Breeze yang sudah ada:
+
+    // --- PROFIL (Breeze) ---
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    
-    // --- 1. DASHBOARD: Semua Role ---
+
+    // --- DASHBOARD: Semua Role ---
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // --- 2. MANAGEMENT PENGGUNA: Hanya Admin ---
-    Route::middleware(['role:Admin'])->group(function () {
-        Route::resource('users', UserController::class)->except(['show']);
-        Route::patch('users/{user}/approve', [UserController::class, 'approveSupplier'])->name('users.approve_supplier');
+    // =========================
+    // ADMIN ROUTES
+    // =========================
+    Route::middleware(['role:Admin'])->prefix('admin')->name('admin.')->group(function () {
+        Route::resource('users', \App\Http\Controllers\Admin\UserController::class)->except(['show']);
+        Route::patch('users/{user}/status', [\App\Http\Controllers\Admin\UserController::class, 'updateStatus'])
+            ->name('users.update_status');
+
+        Route::resource('products', \App\Http\Controllers\Admin\ProductController::class);
+        Route::resource('categories', \App\Http\Controllers\Admin\CategoryController::class)->except(['show']);
     });
 
-    // --- 3. PRODUCT & CATEGORY MANAGEMENT: Admin dan Manager ---
-    Route::middleware(['role:Admin|Manager'])->group(function () {
-        Route::resource('products', ProductController::class);
-        Route::resource('categories', CategoryController::class)->except(['show']);
-        
-        // Opsi: Rute Laporan
-        Route::prefix('reports')->name('reports.')->group(function () {
-            Route::get('inventory', function () { return view('reports.inventory'); })->name('inventory');
-            Route::get('transactions', function () { return view('reports.transactions'); })->name('transactions');
-            Route::get('low-stock', function () { return view('reports.low-stock'); })->name('low_stock');
+    // =========================
+    // MANAGER ROUTES
+    // =========================
+    Route::middleware(['role:Manager'])->prefix('manager')->name('manager.')->group(function () {
+        // Laporan sederhana
+        Route::get('reports/inventory', [\App\Http\Controllers\Manager\ReportController::class, 'inventory'])->name('reports.inventory');
+        Route::get('reports/transactions', [\App\Http\Controllers\Manager\ReportController::class, 'transactions'])->name('reports.transactions');
+        Route::get('reports/low-stock', [\App\Http\Controllers\Manager\ReportController::class, 'lowStock'])->name('reports.low_stock');
+
+        // Approve / Reject transaksi
+        Route::patch('transactions/{transaction}/approve', [\App\Http\Controllers\Manager\TransactionApprovalController::class, 'approve'])->name('transactions.approve');
+        Route::patch('transactions/{transaction}/reject', [\App\Http\Controllers\Manager\TransactionApprovalController::class, 'reject'])->name('transactions.reject');
+
+        // Manager juga bisa CRUD produk/kategori (opsional)
+        Route::resource('products', \App\Http\Controllers\Admin\ProductController::class)->only(['index','create','store','edit','update']);
+        Route::resource('categories', \App\Http\Controllers\Admin\CategoryController::class)->only(['index','create','store','edit','update']);
+    });
+
+    // =========================
+    // STAFF ROUTES
+    // =========================
+    Route::middleware(['role:Staff'])->prefix('staff')->name('staff.')->group(function () {
+        Route::prefix('transactions')->name('transactions.')->group(function () {
+            Route::get('create-incoming', [\App\Http\Controllers\Staff\TransactionController::class, 'createIncoming'])->name('create_incoming');
+            Route::post('store-incoming', [\App\Http\Controllers\Staff\TransactionController::class, 'storeIncoming'])->name('store_incoming');
+
+            Route::get('create-outgoing', [\App\Http\Controllers\Staff\TransactionController::class, 'createOutgoing'])->name('create_outgoing');
+            Route::post('store-outgoing', [\App\Http\Controllers\Staff\TransactionController::class, 'storeOutgoing'])->name('store_outgoing');
+
+            Route::get('{transaction}/edit', [\App\Http\Controllers\Staff\TransactionController::class, 'edit'])->name('edit');
+            Route::patch('{transaction}', [\App\Http\Controllers\Staff\TransactionController::class, 'update'])->name('update');
+            Route::delete('{transaction}', [\App\Http\Controllers\Staff\TransactionController::class, 'destroy'])->name('destroy');
+
+            // Semua role bisa lihat transaksi
+            Route::get('/', [\App\Http\Controllers\Staff\TransactionController::class, 'index'])->name('index');
+            Route::get('/{transaction}', [\App\Http\Controllers\Staff\TransactionController::class, 'show'])->name('show');
         });
-        
-        // Approve/Reject Transaksi
-        Route::patch('transactions/{transaction}/approve', [TransactionController::class, 'approve'])->name('transactions.approve');
-        Route::patch('transactions/{transaction}/reject', [TransactionController::class, 'reject'])->name('transactions.reject');
     });
 
-    // --- 4. TRANSACTION MANAGEMENT ---
-    Route::prefix('transactions')->name('transactions.')->group(function () {
-        
-        // Rute untuk MEMBUAT/MENGELOLA Transaksi - Hanya Staff yang diizinkan
-        Route::middleware(['role:Staff'])->group(function () {
-            // PENTING: Rute STATIS (create) HARUS diletakkan di atas rute DINAMIS ({transaction})
-            
-            // Rute Create/Store Incoming
-            Route::get('create-incoming', [TransactionController::class, 'createIncoming'])->name('create_incoming');
-            Route::post('store-incoming', [TransactionController::class, 'storeIncoming'])->name('store_incoming');
-            
-            // Rute Create/Store Outgoing
-            Route::get('create-outgoing', [TransactionController::class, 'createOutgoing'])->name('create_outgoing');
-            Route::post('store-outgoing', [TransactionController::class, 'storeOutgoing'])->name('store_outgoing');
-            
-            // Rute Edit/Update/Delete (Dinamis)
-            Route::get('{transaction}/edit', [TransactionController::class, 'edit'])->name('edit');
-            Route::patch('{transaction}', [TransactionController::class, 'update'])->name('update');
-            Route::delete('{transaction}', [TransactionController::class, 'destroy'])->name('destroy');
+    // =========================
+    // SUPPLIER ROUTES
+    // =========================
+    Route::middleware(['role:Supplier'])->prefix('supplier')->name('supplier.')->group(function () {
+        Route::prefix('restocks')->name('restocks.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Supplier\RestockController::class, 'index'])->name('index');
+            Route::get('/{restockOrder}', [\App\Http\Controllers\Supplier\RestockController::class, 'show'])->name('show');
+            Route::patch('{restockOrder}/confirm', [\App\Http\Controllers\Supplier\RestockController::class, 'confirm'])->name('confirm');
         });
-
-        // Rute untuk MELIHAT Transaksi - Semua Role dapat mengakses Index (untuk Filter View) dan Show
-        // Rute ini diletakkan di bawah rute statis 'create' Staff untuk menghindari penimpalan.
-        Route::get('/', [TransactionController::class, 'index'])->name('index');
-        Route::get('/{transaction}', [TransactionController::class, 'show'])->name('show');
     });
-    
-    // --- 5. RESTOCK / PURCHASE ORDER (PO) ---
-    Route::prefix('restocks')->name('restocks.')->group(function () { 
-        
-        // Admin/Manager: Buat PO (Rute Statis)
+
+    // =========================
+    // RESTOCK (Admin/Manager/Staff)
+    // =========================
+    Route::prefix('restocks')->name('restocks.')->group(function () {
         Route::middleware(['role:Admin|Manager'])->group(function () {
-            Route::get('create', [RestockController::class, 'create'])->name('create');
-            Route::post('/', [RestockController::class, 'store'])->name('store');
+            Route::get('create', [\App\Http\Controllers\Admin\RestockController::class, 'create'])->name('create');
+            Route::post('/', [\App\Http\Controllers\Admin\RestockController::class, 'store'])->name('store');
         });
-        
-        // Semua Role melihat daftar PO (Rute Index)
-        Route::get('/', [RestockController::class, 'index'])->name('index');
-        
-        // Supplier: Konfirmasi PO
-        Route::middleware(['role:Supplier'])->group(function () {
-            Route::patch('{restockOrder}/confirm', [RestockController::class, 'confirm'])->name('confirm');
-        });
-        
-        // Admin/Manager/Staff: Terima Barang (Penerimaan Barang)
+
         Route::middleware(['role:Admin|Manager|Staff'])->group(function () {
-            Route::patch('{restockOrder}/receive', [RestockController::class, 'receive'])->name('receive');
+            Route::patch('{restockOrder}/receive', [\App\Http\Controllers\Admin\RestockController::class, 'receive'])->name('receive');
         });
-        
-        // Rute Dinamis (Detail PO) - Harus di akhir
-        Route::get('/{restockOrder}', [RestockController::class, 'show'])->name('show');
     });
 });
 

@@ -10,20 +10,10 @@ return new class extends Migration
     {
         Schema::create('transaction_items', function (Blueprint $table) {
             $table->id();
-
-            $table->foreignId('transaction_id')
-                ->constrained('transactions')
-                ->cascadeOnDelete();
-
-            $table->foreignId('product_id')
-                ->constrained('products')
-                ->cascadeOnDelete();
-
+            $table->foreignId('transaction_id')->constrained()->onDelete('cascade');
+            $table->foreignId('product_id')->constrained()->onDelete('cascade');
             $table->integer('quantity');
-
-            // Harga yang digunakan untuk menghitung nilai transaksi (PENTING!)
-            $table->decimal('price_at_transaction', 15, 2); 
-
+            $table->decimal('price_at_transaction', 12, 2);   // harga saat transaksi
             $table->timestamps();
         });
     }

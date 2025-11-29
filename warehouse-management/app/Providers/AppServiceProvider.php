@@ -12,9 +12,16 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Register any application services.
      */
-    public function register(): void
+    public function register()
     {
-        //
+        // Singleton atau bind sesuai kebutuhan
+        $this->app->singleton(\App\Services\TransactionService::class, function ($app) {
+            return new \App\Services\TransactionService();
+        });
+
+        $this->app->singleton(\App\Services\InventoryService::class, function ($app) {
+            return new \App\Services\InventoryService();
+        });
     }
 
     /**

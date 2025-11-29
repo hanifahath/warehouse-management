@@ -10,9 +10,9 @@ return new class extends Migration
     {
         Schema::create('categories', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->unique();
+            $table->string('name')->unique();                 // nama kategori unique
             $table->text('description')->nullable();
-            $table->string('image')->nullable();
+            $table->string('image_path')->nullable();         // gambar kategori
             $table->timestamps();
         });
     }

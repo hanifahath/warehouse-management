@@ -15,11 +15,13 @@ class RestockItem extends Model
         'product_id',
         'quantity',
         'unit_price', // KRITIS: Tambahkan unit_price
+        'subtotal', // KRITIS: Tambahkan subtotal
     ];
 
     protected $casts = [
         'quantity' => 'integer',
         'unit_price' => 'float',
+        'subtotal' => 'float',
     ];
 
     /**

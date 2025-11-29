@@ -70,27 +70,29 @@ class RestockService
      */
     public function processReceiving(RestockOrder $order, int $receiverId): bool
     {
-        // Pengecekan status terakhir
         if ($order->status === 'Received') {
             throw new \Exception("Order sudah diterima sebelumnya.");
         }
-        
+
         DB::beginTransaction();
         try {
-            // 1. Panggil Transaction Service untuk membuat Transaksi Masuk
-            //    Metode ini akan mencatat Transaksi dan mengupdate stock produk.
-            $this->transactionService->createIncomingTransactionFromRestock($order, $receiverId);
-            
-            // 2. Update Status Restock Order menjadi Received
-            $order->update(['status' => 'Received']);
+            // Buat transaksi masuk + update stok
+            $transaction = $this->transactionService
+                ->createIncomingTransactionFromRestock($order, $receiverId);
+
+            // Update status + penerima
+            $order->update([
+                'status' => 'Received',
+                'received_at' => now(),
+                'received_by' => $receiverId,
+            ]);
 
             DB::commit();
             return true;
-            
+
         } catch (\Exception $e) {
             DB::rollBack();
-            // Lemparkan kembali exception yang lebih spesifik agar Controller bisa menampilkannya
-            throw new \Exception("Penerimaan barang gagal diproses: " . $e->getMessage());
+            throw new \Exception("Penerimaan barang gagal: " . $e->getMessage());
         }
     }
 }

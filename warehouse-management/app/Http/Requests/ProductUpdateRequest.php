@@ -3,40 +3,53 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ProductUpdateRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
-    public function authorize(): bool
+    public function authorize()
     {
-        return in_array(auth()->user()->role, ['Admin', 'Manager']);
+        return $this->user() && in_array($this->user()->role, ['Admin', 'Manager']);
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
-    public function rules(): array
+    public function rules()
     {
-        // Ambil ID produk dari route
-        $productId = $this->route('product'); 
+        $productId = $this->route('product') ? $this->route('product')->id : null;
 
         return [
-            // SKU harus unik, tetapi abaikan SKU milik produk yang sedang diedit ($productId)
-            'sku' => ['required', 'string', 'max:50', Rule::unique('products')->ignore($productId)],
-            'name' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
-            'description' => 'nullable|string',
-            'purchase_price' => 'required|numeric|min:0',
-            'selling_price' => 'required|numeric|min:0',
-            'min_stock' => 'required|integer|min:0',
-            'current_stock' => 'required|integer|min:0',
-            'unit' => 'required|string|max:20',
-            'location' => 'nullable|string|max:50',
-            'image' => 'nullable|image|max:2048',
+            'name' => ['required', 'string', 'max:255'],
+            // SKU tidak boleh diubah; jika form mengirim sku, tolak perubahan
+            // Pastikan front-end tidak mengirim sku; jika tetap dikirim, ignore atau validasi agar sama dengan existing
+            'category_id' => ['required', 'integer', 'exists:categories,id'],
+            'description' => ['nullable', 'string'],
+            'purchase_price' => ['required', 'numeric', 'min:0'],
+            'selling_price' => ['required', 'numeric', 'min:0'],
+            'min_stock' => ['required', 'integer', 'min:0'],
+            'current_stock' => ['required', 'integer', 'min:0'],
+            'unit' => ['required', 'string', 'max:50'],
+            'rack_location' => ['nullable', 'string', 'max:255'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ];
+    }
+
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            // Jika front-end mengirim sku yang berbeda, tolak perubahan SKU
+            if ($this->has('sku')) {
+                $product = $this->route('product');
+                if ($product && $this->input('sku') !== $product->sku) {
+                    $validator->errors()->add('sku', 'SKU tidak dapat diubah.');
+                }
+            }
+        });
+    }
+
+    public function messages()
+    {
+        return [
+            'image.image' => 'File harus berupa gambar.',
+            'image.max' => 'Ukuran gambar maksimal 2MB.',
         ];
     }
 }

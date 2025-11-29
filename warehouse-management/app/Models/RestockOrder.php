@@ -59,4 +59,9 @@ class RestockOrder extends Model
     {
         return $this->belongsTo(User::class, 'received_by');
     }
+
+    public function transaction()
+    {
+        return $this->hasOne(Transaction::class, 'po_number', 'po_number');
+    }
 }

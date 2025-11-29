@@ -9,22 +9,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('restock_items', function (Blueprint $table) {
-
             $table->id();
-
-            $table->foreignId('restock_order_id')
-                    ->constrained('restock_orders')
-                    ->cascadeOnDelete();
-
-            $table->foreignId('product_id')
-                    ->constrained('products')
-                    ->cascadeOnDelete();
-
+            $table->foreignId('restock_order_id')->constrained()->onDelete('cascade');
+            $table->foreignId('product_id')->constrained()->onDelete('cascade');
             $table->integer('quantity');
-
-            // Harga beli produk saat order dibuat (BARU DITAMBAHKAN)
-            $table->decimal('unit_price', 15, 2);
-
+            $table->decimal('unit_price', 12, 2);
+            $table->decimal('subtotal', 12, 2)->nullable();
             $table->timestamps();
         });
     }
