@@ -1,88 +1,60 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Detail Transaksi {{ $transaction->transaction_number }}</title>
-</head>
-<body>
-    <h2>Detail Transaksi</h2>
-    <a href="{{ route('transactions.index') }}">Kembali ke Daftar Transaksi</a>
+@extends('layouts.app')
 
-    @if (session('success'))
-        <div style="color: green;">{{ session('success') }}</div>
-    @endif
-    @if (session('error'))
-        <div style="color: red;">{{ session('error') }}</div>
-    @endif
-    
-    <table border="1" cellpadding="10" cellspacing="0">
-        <tr><th>No. Transaksi</th><td>{{ $transaction->transaction_number }}</td></tr>
-        <tr><th>Tipe</th><td>{{ $transaction->type }}</td></tr>
-        <tr><th>Status</th><td style="color: {{ $transaction->status == 'Pending' ? 'orange' : 'green' }};"><b>{{ $transaction->status }}</b></td></tr>
-        <tr><th>Tanggal</th><td>{{ $transaction->date }}</td></tr>
-        <tr><th>Dibuat Oleh</th><td>{{ $transaction->creator->name ?? 'N/A' }}</td></tr>
-        
-        @if ($transaction->approved_by)
-            <tr><th>Disetujui Oleh</th><td>{{ $transaction->approver->name ?? 'N/A' }}</td></tr>
-        @endif
-        
-        @if ($transaction->type === 'Incoming')
-            <tr><th>Supplier</th><td>{{ $transaction->supplier->name ?? 'N/A' }}</td></tr>
-        @else
-            <tr><th>Pelanggan</th><td>{{ $transaction->customer_name }}</td></tr>
-        @endif
-        <tr><th>Catatan</th><td>{{ $transaction->notes }}</td></tr>
-    </table>
+@section('title', 'Transaction Details')
 
-    <h3>Item Transaksi</h3>
-    <table border="1" cellpadding="10" cellspacing="0">
-        <thead>
-            <tr>
-                <th>Produk</th>
-                <th>Kuantitas</th>
-                <th>Harga Satuan</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach ($transaction->items as $item)
-                <tr>
-                    <td>{{ $item->product->name ?? 'Produk Dihapus' }}</td>
-                    <td>{{ $item->quantity }}</td>
-                    <td>Rp {{ number_format($item->price_at_transaction) }}</td>
-                </tr>
-            @endforeach
-        </tbody>
-    </table>
-    
-    <br>
-    
-    {{-- Tombol Approval (Hanya untuk Manager dan Status Pending) --}}
-    @if ($transaction->status === 'Pending' && in_array(auth()->user()->role, ['Admin', 'Manager']))
-        <form action="{{ route('transactions.approve', $transaction) }}" method="POST">
-            @csrf
-            @method('PATCH') {{-- <-- PERBAIKAN: Harus menggunakan metode PATCH --}}
-            <button type="submit" onclick="return confirm('SETUJUI TRANSAKSI INI? Stok akan diupdate.')" 
-                    style="background-color: blue; color: white; padding: 10px;">
-                SETUJUI TRANSAKSI
-            </button>
-        </form>
+@section('content')
+    <h1 class="text-2xl font-bold mb-4">Transaction Details</h1>
 
-        {{-- Tambahkan juga tombol REJECT --}}
-        <form action="{{ route('transactions.reject', $transaction) }}" method="POST" style="margin-top: 10px;">
-            @csrf
-            @method('PATCH') {{-- <-- PERBAIKAN: Juga harus menggunakan metode PATCH --}}
-            <button type="submit" onclick="return confirm('TOLAK TRANSAKSI INI? Transaksi akan dibatalkan.')" 
-                    style="background-color: red; color: white; padding: 10px;">
-                TOLAK TRANSAKSI
-            </button>
-        </form>
-    @endif
+    <x-warehouse.card>
+        <div class="grid grid-cols-2 gap-4">
+            <div><strong>Transaction #:</strong> {{ $transaction->transaction_number }}</div>
+            <div><strong>Type:</strong> {{ $transaction->type }}</div>
+            <div><strong>Date:</strong> {{ $transaction->date->format('d M Y') }}</div>
+            <div>
+                <strong>Status:</strong>
+                <x-warehouse.badge status="{{ strtolower($transaction->status) }}" />
+            </div>
+            @if($transaction->type === 'Incoming')
+                <div><strong>Supplier:</strong> {{ $transaction->supplier->name }}</div>
+            @else
+                <div><strong>Customer:</strong> {{ $transaction->customer_name }}</div>
+            @endif
+            <div><strong>Notes:</strong> {{ $transaction->notes }}</div>
+        </div>
+    </x-warehouse.card>
 
-    {{-- Tambahkan juga tombol EDIT jika status pending dan dibuat oleh Staff atau Admin/Manager yang berhak --}}
-    @if ($transaction->status === 'Pending' && ($transaction->creator_id === auth()->id() || in_array(auth()->user()->role, ['Admin', 'Manager'])))
-        <a href="{{ route('transactions.edit', $transaction) }}" 
-           style="background-color: orange; color: white; padding: 10px; margin-top: 10px; display: inline-block; text-decoration: none;">
-            EDIT TRANSAKSI
+    <h2 class="text-xl font-bold mt-6 mb-2">Transaction Items</h2>
+    <x-warehouse.card>
+        <table class="w-full border-collapse">
+            <thead>
+                <tr class="bg-gray-200">
+                    <th class="p-2">Product</th>
+                    <th class="p-2">Quantity</th>
+                    <th class="p-2">Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($transaction->items as $item)
+                    <tr class="border-b">
+                        <td class="p-2">{{ $item->product->name }} ({{ $item->product->sku }})</td>
+                        <td class="p-2">{{ $item->quantity }}</td>
+                        <td class="p-2">Rp {{ number_format($item->price_at_transaction, 0, ',', '.') }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </x-warehouse.card>
+
+    {{-- Aksi tambahan --}}
+    <div class="mt-4 flex space-x-2">
+        <a href="{{ route('transactions.edit', $transaction) }}">
+            <x-warehouse.button type="primary">Edit</x-warehouse.button>
         </a>
-    @endif
-</body>
-</html>
+        <form method="POST" action="{{ route('transactions.destroy', $transaction) }}">
+            @csrf @method('DELETE')
+            <x-warehouse.button type="danger" onclick="return confirm('Delete this transaction?')">
+                Delete
+            </x-warehouse.button>
+        </form>
+    </div>
+@endsection

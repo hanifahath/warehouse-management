@@ -10,11 +10,12 @@ return new class extends Migration
     {
         Schema::create('restock_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('restock_order_id')->constrained()->onDelete('cascade');
-            $table->foreignId('product_id')->constrained()->onDelete('cascade');
+
+            $table->foreignId('restock_order_id')->constrained('restock_orders')->cascadeOnDelete();
+            $table->foreignId('product_id')->constrained('products')->cascadeOnDelete();
+
             $table->integer('quantity');
-            $table->decimal('unit_price', 12, 2);
-            $table->decimal('subtotal', 12, 2)->nullable();
+
             $table->timestamps();
         });
     }

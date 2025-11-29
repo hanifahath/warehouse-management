@@ -2,35 +2,56 @@
 
 namespace Database\Seeders;
 
-use App\Models\Transaction;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
+use App\Models\Transaction;
+use App\Models\User;
+use Carbon\Carbon;
 
 class TransactionSeeder extends Seeder
 {
     public function run(): void
     {
+        // Pastikan ada supplier & staff/manager
+        $supplier = User::firstOrCreate(
+            ['email' => 'supplier@demo.com'],
+            [
+                'name' => 'Demo Supplier',
+                'password' => bcrypt('password'),
+                'role' => 'Supplier',
+                'is_approved' => true,
+            ]
+        );
+
+        $staff = User::firstOrCreate(
+            ['email' => 'staff@demo.com'],
+            [
+                'name' => 'Demo Staff',
+                'password' => bcrypt('password'),
+                'role' => 'Staff',
+                'is_approved' => true,
+            ]
+        );
+
+        // --- Create Incoming Transaction (barang masuk) ---
         Transaction::create([
-            'transaction_number' => 'TRX-' . Str::random(8),
+            'transaction_number' => 'TRX-IN-' . now()->timestamp,
             'type' => 'Incoming',
-            // HAPUS INI: 'warehouse_id' => 1,
-            'supplier_id' => 4, // Gunakan ID Supplier Aktif (misalnya ID 4 dari UserSeeder yang kita buat)
-            'created_by' => 3,  // Gunakan ID Staff Gudang (misalnya ID 3)
-            'status' => 'Pending',
-            'date' => now(),
-            'notes' => 'Initial seeded incoming transaction'
+            'date' => Carbon::now()->subDays(2),
+            'supplier_id' => $supplier->id,
+            'notes' => 'Initial stock refill',
+            'status' => 'Verified',
+            'created_by' => $staff->id,
         ]);
-        
-        // Tambahkan satu transaksi Outgoing untuk pengujian
+
+        // --- Create Outgoing Transaction (barang keluar) ---
         Transaction::create([
-            'transaction_number' => 'TRX-' . Str::random(8),
+            'transaction_number' => 'TRX-OUT-' . (now()->timestamp + 1),
             'type' => 'Outgoing',
-            // HAPUS INI: 'warehouse_id' => 1,
-            'customer_name' => 'Budi Retail', // Ganti supplier_id dengan customer_name
-            'created_by' => 3,  // Staff Gudang
-            'status' => 'Pending',
-            'date' => now(),
-            'notes' => 'Initial seeded outgoing transaction'
+            'date' => Carbon::now()->subDay(),
+            'customer_name' => 'PT Sinar Jaya',
+            'notes' => 'Outgoing shipment to customer',
+            'status' => 'Approved',
+            'created_by' => $staff->id,
         ]);
     }
 }

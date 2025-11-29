@@ -1,55 +1,50 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Buat Transaksi Masuk</title>
-</head>
-<body>
-    <h2>Buat Transaksi Masuk (Restock/Retur)</h2>
-    <a href="{{ route('transactions.index') }}">Kembali ke Daftar Transaksi</a>
-    
-    @if ($errors->any())
-        <div style="color: red;">
-            <ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
-        </div>
-    @endif
-    @if (session('error'))
-        <div style="color: red;">{{ session('error') }}</div>
-    @endif
+@extends('layouts.app')
 
-    <form action="{{ route('transactions.store_incoming') }}" method="POST">
+@section('title', 'Create Incoming Transaction')
+
+@section('content')
+    <h1 class="text-2xl font-bold mb-4">Create Incoming Transaction</h1>
+
+    @include('shared.form-errors')
+
+    <form method="POST" action="{{ route('transactions.store') }}">
         @csrf
-        
-        <label for="supplier_id">Supplier:</label><br>
-        <select id="supplier_id" name="supplier_id" required>
-            <option value="">-- Pilih Supplier --</option>
-            @foreach ($suppliers as $supplier)
-                <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
-            @endforeach
-        </select><br><br>
+        <input type="hidden" name="type" value="Incoming">
 
-        <label for="date">Tanggal Transaksi:</label><br>
-        <input type="date" id="date" name="date" value="{{ now()->toDateString() }}" required><br><br>
+        <x-warehouse.card>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label>Supplier</label>
+                    <select name="supplier_id" class="w-full border rounded px-2 py-1" required>
+                        @foreach($suppliers as $supplier)
+                            <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label>Date</label>
+                    <input type="date" name="date" class="w-full border rounded px-2 py-1" required>
+                </div>
+                <div class="col-span-2">
+                    <label>Notes</label>
+                    <textarea name="notes" class="w-full border rounded px-2 py-1"></textarea>
+                </div>
+            </div>
 
-        <label for="notes">Catatan:</label><br>
-        <textarea id="notes" name="notes">{{ old('notes') }}</textarea><br><br>
+            <h2 class="text-lg font-bold mt-6 mb-2">Transaction Items</h2>
+            <div class="grid grid-cols-3 gap-2">
+                <select name="items[0][product_id]" class="border rounded px-2 py-1" required>
+                    @foreach($products as $product)
+                        <option value="{{ $product->id }}">{{ $product->name }} ({{ $product->sku }})</option>
+                    @endforeach
+                </select>
+                <input type="number" name="items[0][quantity]" placeholder="Quantity" class="border rounded px-2 py-1" required>
+                <input type="number" name="items[0][price_at_transaction]" placeholder="Price" class="border rounded px-2 py-1" required>
+            </div>
 
-        <h3>Detail Item (Hanya untuk 1 Item saat Cek Fungsionalitas)</h3>
-        
-        <label for="items[0][product_id]">Produk:</label><br>
-        <select name="items[0][product_id]" required>
-            <option value="">-- Pilih Produk --</option>
-            @foreach ($products as $product)
-                <option value="{{ $product->id }}">[{{ $product->sku }}] {{ $product->name }}</option>
-            @endforeach
-        </select><br><br>
-
-        <label for="items[0][quantity]">Kuantitas Masuk:</label><br>
-        <input type="number" name="items[0][quantity]" value="1" min="1" required><br><br>
-
-        <label for="items[0][price_at_transaction]">Harga Beli Satuan:</label><br>
-        <input type="number" name="items[0][price_at_transaction]" value="0" required><br><br>
-        
-        <button type="submit">Buat Transaksi Masuk (Pending)</button>
+            <div class="mt-4">
+                <x-warehouse.button type="primary">Save Transaction</x-warehouse.button>
+            </div>
+        </x-warehouse.card>
     </form>
-</body>
-</html>
+@endsection

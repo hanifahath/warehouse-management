@@ -1,131 +1,52 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            {{ __('Manajemen Pengguna & Supplier') }}
-        </h2>
-    </x-slot>
+@extends('layouts.app')
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900 dark:text-gray-100">
+@section('title', 'User Management')
 
-                    <!-- Notifikasi -->
-                    @if (session('success'))
-                        <div class="p-4 mb-4 text-sm text-green-800 rounded-lg bg-green-50 dark:bg-gray-800 dark:text-green-400" role="alert">
-                            {{ session('success') }}
-                        </div>
-                    @endif
-                    @if (session('error'))
-                        <div class="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400" role="alert">
-                            {{ session('error') }}
-                        </div>
-                    @endif
-                    
-                    <!-- Notifikasi Error Validasi (PENTING untuk debugging) -->
-                    @if ($errors->any())
-                        <div class="p-4 mb-4 text-sm text-yellow-800 rounded-lg bg-yellow-50 dark:bg-gray-800 dark:text-yellow-400" role="alert">
-                            <strong>Kesalahan Validasi:</strong>
-                            <ul>
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    @endif
+@section('content')
+    <h1 class="text-2xl font-bold mb-4">Users</h1>
 
-                    <!-- Statistik Filter (Opsional) -->
-                    <div class="mb-4">
-                        <a href="{{ route('users.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 border border-transparent rounded-md font-semibold text-xs text-gray-800 dark:text-gray-200 uppercase tracking-widest hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                            Semua Pengguna
-                        </a>
-                        <a href="{{ route('users.index', ['filter' => 'unapproved_suppliers']) }}" class="inline-flex items-center px-4 py-2 bg-yellow-500 text-white border border-transparent rounded-md font-semibold text-xs uppercase tracking-widest hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                            Supplier Pending ({{ $unapprovedSuppliersCount }})
-                        </a>
-                    </div>
-
-
-                    <h3 class="font-semibold text-lg mt-6 mb-3 border-b border-gray-700 pb-2">{{ __('Daftar Pengguna') }}</h3>
-                    
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-700">
-                            <thead>
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">ID</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Nama</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Email</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Role</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status Approval</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-700">
-                                @foreach ($users as $user)
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap">{{ $user->id }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap">{{ $user->name }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap">{{ $user->email }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap">{{ $user->role }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            @if ($user->role === 'Supplier')
-                                                <span class="font-bold {{ $user->is_approved ? 'text-green-500' : 'text-red-500' }}">
-                                                    {{ $user->is_approved ? 'Approved' : 'PENDING' }}
-                                                </span>
-                                            @else
-                                                -
-                                            @endif
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                                            @if ($user->role === 'Supplier')
-                                                <form action="{{ route('users.update_status', $user) }}" method="POST" style="display:inline;">
-                                                    @csrf
-                                                    @method('patch') 
-
-                                                    @if (!$user->is_approved)
-                                                        <!-- Kunci Perbaikan 1: Menambahkan input is_approved=1 (Approve) -->
-                                                        <input type="hidden" name="is_approved" value="1"> 
-                                                        <button type="submit" 
-                                                                class="inline-flex items-center px-3 py-1 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150"
-                                                                onclick="return confirm('Apakah Anda yakin ingin menyetujui Supplier {{ $user->name }}?')">
-                                                            Approve
-                                                        </button>
-                                                    @else
-                                                        <!-- Kunci Perbaikan 2: Menambahkan input is_approved=0 (Batalkan/Reject) -->
-                                                        <input type="hidden" name="is_approved" value="0">
-                                                        <button type="submit" 
-                                                                class="inline-flex items-center px-3 py-1 bg-yellow-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition ease-in-out duration-150"
-                                                                onclick="return confirm('Apakah Anda yakin ingin membatalkan persetujuan Supplier {{ $user->name }}?')">
-                                                            Batalkan
-                                                        </button>
-                                                    @endif
-                                                </form>
-                                            @endif
-                                            
-                                            <!-- Tombol Hapus Umum (Jangan tampilkan untuk Admin yang sedang login) -->
-                                            @if (auth()->id() !== $user->id)
-                                                <form action="{{ route('users.destroy', $user) }}" method="POST" style="display:inline;">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" 
-                                                            class="text-red-600 hover:text-red-900" 
-                                                            onclick="return confirm('Apakah Anda yakin ingin menghapus pengguna {{ $user->name }}?')">
-                                                        Hapus
-                                                    </button>
-                                                </form>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <div class="mt-4">
-                        {{ $users->links() }}
-                    </div>
-
-                </div>
-            </div>
+    <x-warehouse.card>
+        <div class="mb-4">
+            <a href="{{ route('users.create') }}">
+                <x-warehouse.button type="primary">Create New User</x-warehouse.button>
+            </a>
         </div>
-    </div>
-</x-app-layout>
+
+        <table class="w-full border-collapse">
+            <thead>
+                <tr class="bg-gray-200">
+                    <th class="p-2">Name</th>
+                    <th class="p-2">Email</th>
+                    <th class="p-2">Role</th>
+                    <th class="p-2">Approved</th>
+                    <th class="p-2">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($users as $user)
+                    <tr class="border-b">
+                        <td class="p-2">{{ $user->name }}</td>
+                        <td class="p-2">{{ $user->email }}</td>
+                        <td class="p-2">{{ $user->role }}</td>
+                        <td class="p-2">
+                            <x-warehouse.badge status="{{ $user->is_approved ? 'ok' : 'low' }}" />
+                        </td>
+                        <td class="p-2 flex space-x-2">
+                            <a href="{{ route('users.show', $user) }}" class="text-blue-600 hover:underline">View</a>
+                            <a href="{{ route('users.edit', $user) }}" class="text-yellow-600 hover:underline">Edit</a>
+                            <form method="POST" action="{{ route('users.destroy', $user) }}">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="text-red-600 hover:underline"
+                                        onclick="return confirm('Delete this user?')">
+                                    Delete
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+
+        @include('shared.pagination', ['paginator' => $users])
+    </x-warehouse.card>
+@endsection

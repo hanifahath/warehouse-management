@@ -20,7 +20,7 @@ class ProductSeeder extends Seeder
             'unit' => 'pcs',
             'min_stock' => 5,
             'stock' => 15, // Opsional: Tambahkan stok awal untuk testing
-            'location' => 'R-A1', // Opsional: Tambahkan lokasi rak
+            'rack_location' => 'R-A1', // Opsional: Tambahkan lokasi rak
         ]);
 
         Product::create([
@@ -32,7 +32,7 @@ class ProductSeeder extends Seeder
             'unit' => 'pcs',
             'min_stock' => 2,
             'stock' => 8, // Stok awal
-            'location' => 'R-B3',
+            'rack_location' => 'R-B3',
         ]);
 
         Product::create([
@@ -44,7 +44,7 @@ class ProductSeeder extends Seeder
             'unit' => 'pack',
             'min_stock' => 10,
             'stock' => 50, // Stok awal
-            'location' => 'S-C4',
+            'rack_location' => 'S-C4',
         ]);
     }
 }
