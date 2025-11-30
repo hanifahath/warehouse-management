@@ -37,7 +37,7 @@ class TransactionController extends Controller
         $query = Transaction::query();
         $baseTitle = 'Daftar Semua Transaksi';
 
-        if (auth()->user()->role === 'Staff') {
+        if (auth()->user()->hasRole('Staff')) {
             $query->where('created_by', auth()->id());
             $baseTitle = 'Daftar Transaksi Saya';
         }
@@ -65,7 +65,7 @@ class TransactionController extends Controller
     {
         $transaction->load(['items.product', 'creator', 'approver']);
 
-        if (auth()->user()->role === 'Staff' && $transaction->created_by !== auth()->id()) {
+        if (auth()->user()->hasRole('Staff') && $transaction->created_by !== auth()->id()) {
             abort(403, 'Akses Ditolak.');
         }
 
@@ -77,7 +77,7 @@ class TransactionController extends Controller
         if (auth()->user()->role !== 'Staff') {
             abort(403, 'Akses Ditolak: Hanya Staff yang bisa membuat transaksi baru.');
         }
-        $suppliers = User::where('role', 'Supplier')->where('is_approved', true)->get();
+        $suppliers = User::User::role('Supplier')->where('is_approved', true)->get();
         $products = Product::all();
 
         return view('transactions.create_incoming', compact('suppliers', 'products'));

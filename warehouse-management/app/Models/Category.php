@@ -9,11 +9,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Category extends Model
 {
     use HasFactory;
+
     protected $fillable = ['name', 'description'];
 
-    /**
-     * Relasi 1:N ke Product
-     */
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);

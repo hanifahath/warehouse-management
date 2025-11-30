@@ -30,7 +30,7 @@ class RestockController extends Controller
     public function create()
     {
         // Hanya Manager/Admin yang boleh mengakses route ini (atur middleware di routes)
-        $suppliers = User::where('role', 'Supplier')->get();
+        $suppliers = User::role('Supplier')->get();
         $products = Product::all();
 
         return view('restocks.create', [
@@ -139,7 +139,7 @@ class RestockController extends Controller
     // Optional: edit/update PO (gunakan RestockUpdateRequest jika perlu)
     public function edit(RestockOrder $restockOrder)
     {
-        $suppliers = User::where('role', 'Supplier')->get();
+        $suppliers = User::role('Supplier')->get();
         $products = Product::all();
         $restockOrder->load('items.product');
 

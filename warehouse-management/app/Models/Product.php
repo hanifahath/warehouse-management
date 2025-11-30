@@ -11,7 +11,6 @@ class Product extends Model
 {
     use HasFactory;
 
-    // Pastikan semua field yang digunakan di controller ada di sini
     protected $fillable = [
         'sku', 
         'name', 
@@ -24,13 +23,8 @@ class Product extends Model
         'unit', 
         'location', 
         'image_path',
-        
-        // --- PERUBAHAN KRITIS ---
-        // Tambahkan supplier_id ke fillable. Kunci asing ini menunjuk ke tabel 'users'.
-        'supplier_id', 
     ];
-    
-    // Cast 'stock' dan 'min_stock' ke integer
+
     protected $casts = [
         'stock' => 'integer',
         'min_stock' => 'integer',
@@ -38,44 +32,21 @@ class Product extends Model
         'selling_price' => 'float',
     ];
 
-    /**
-     * Relasi: Produk dimiliki oleh satu Kategori
-     */
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
     }
-    
-    // --- PERUBAHAN KRITIS ---
-    /**
-     * Relasi: Produk dimiliki oleh satu Supplier (STI)
-     */
-    public function supplier(): BelongsTo
-    {
-        // PENTING: Kita merujuk ke Model Supplier (yang merupakan anak dari User)
-        // Model Supplier akan memastikan bahwa user yang terhubung memiliki role = 'Supplier'
-        return $this->belongsTo(Supplier::class, 'supplier_id');
-    }
-    
-    /**
-     * Relasi: Riwayat transaksi (Barang Masuk/Keluar)
-     */
+
     public function transactionDetails(): HasMany
     {
-        return $this->hasMany(TransactionItem::class); 
+        return $this->hasMany(TransactionItem::class);
     }
-    
-    /**
-     * Relasi: Item Restock Order
-     */
+
     public function restockItems(): HasMany
     {
         return $this->hasMany(RestockItem::class);
     }
 
-    /**
-     * Scope untuk produk yang stoknya di bawah minimum
-     */
     public function scopeLowStock($query)
     {
         return $query->whereColumn('stock', '<=', 'min_stock');

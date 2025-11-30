@@ -26,7 +26,7 @@ class UserController extends Controller
         }
 
         $users = $query->orderBy('name')->paginate(10);
-        $unapprovedSuppliersCount = User::where('role', 'Supplier')->where('is_approved', false)->count();
+        $unapprovedSuppliersCount = User::role('Supplier')->where('is_approved', false)->count();
 
         return view('users.index', compact('users', 'unapprovedSuppliersCount'));
     }

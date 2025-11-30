@@ -27,6 +27,6 @@ class StockMovement extends Model
 
     public function reference()
     {
-        return $this->morphTo(__FUNCTION__, 'reference_type', 'reference_id');
+        return $this->morphTo();
     }
 }
