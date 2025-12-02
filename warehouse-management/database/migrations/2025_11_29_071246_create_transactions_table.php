@@ -11,11 +11,16 @@ return new class extends Migration {
             $table->string('transaction_number')->unique();
             $table->enum('type', ['Incoming', 'Outgoing']);
             $table->date('date');
+
             $table->foreignId('supplier_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('customer_name')->nullable();
             $table->text('notes')->nullable();
+
             $table->enum('status', ['Pending','Verified','Completed','Approved','Shipped'])->default('Pending');
+            
             $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('approved_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->dateTime('approved_at')->nullable();
             $table->timestamps();
         });
     }

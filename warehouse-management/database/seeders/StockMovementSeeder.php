@@ -3,59 +3,55 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use App\Models\StockMovement;
 use App\Models\Product;
+use App\Models\User;
 
 class StockMovementSeeder extends Seeder
 {
     public function run(): void
     {
-        $products = Product::all();
+        $staff = User::where('role','Staff')->first();
+        foreach (Product::all() as $product) {
 
-        if ($products->isEmpty()) {
-            $this->command->warn("⚠️ Tidak ada produk. Seed produk dulu.");
-            return;
-        }
-
-        foreach ($products as $product) {
-
-            // 1. Restock movement (stok bertambah 20)
-            DB::table('stock_movements')->insert([
-                'product_id'  => $product->id,
-                'change'      => 20,
+            // Simulasi restock
+            StockMovement::firstOrCreate([
+                'product_id' => $product->id,
                 'source_type' => 'restock',
-                'source_id'   => 1, // contoh: id restock order
-                'created_at'  => now(),
-                'updated_at'  => now(),
+                'source_id' => 1,
+            ], [
+                'change' => 20,
+                'before_qty' => $product->current_stock,
+                'after_qty' => $product->current_stock + 20,
+                'performed_by' => $staff->id,
             ]);
+            $product->increment('current_stock', 20);
 
-            $product->increment('stock', 20);
-
-            // 2. Incoming transaction (stok bertambah 10)
-            DB::table('stock_movements')->insert([
-                'product_id'  => $product->id,
-                'change'      => 10,
+            // Incoming transaction
+            StockMovement::firstOrCreate([
+                'product_id' => $product->id,
                 'source_type' => 'transaction_in',
-                'source_id'   => 1, // contoh: id transaksi masuk
-                'created_at'  => now(),
-                'updated_at'  => now(),
+                'source_id' => 1,
+            ], [
+                'change' => 10,
+                'before_qty' => $product->current_stock,
+                'after_qty' => $product->current_stock + 10,
+                'performed_by' => $staff->id,
             ]);
+            $product->increment('current_stock', 10);
 
-            $product->increment('stock', 10);
-
-            // 3. Outgoing transaction (stok berkurang -5)
-            DB::table('stock_movements')->insert([
-                'product_id'  => $product->id,
-                'change'      => -5,
+            // Outgoing transaction
+            StockMovement::firstOrCreate([
+                'product_id' => $product->id,
                 'source_type' => 'transaction_out',
-                'source_id'   => 1, // contoh: id transaksi keluar
-                'created_at'  => now(),
-                'updated_at'  => now(),
+                'source_id' => 1,
+            ], [
+                'change' => -5,
+                'before_qty' => $product->current_stock,
+                'after_qty' => $product->current_stock - 5,
+                'performed_by' => $staff->id,
             ]);
-
-            $product->decrement('stock', 5);
+            $product->decrement('current_stock', 5);
         }
-
-        $this->command->info("✅ StockMovementSeeder selesai. Pergerakan stok berhasil dibuat.");
     }
 }

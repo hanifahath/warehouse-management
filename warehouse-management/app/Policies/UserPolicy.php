@@ -3,68 +3,34 @@
 namespace App\Policies;
 
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class UserPolicy
 {
-    /**
-     * Determine whether the user can view any models.
-     */
-    public function viewAny(User $user): bool
+    public function create(User $authUser)
     {
-        return false;
+        return $authUser->role === 'Admin';
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
-    public function view(User $user, User $model): bool
+    public function view(User $authUser, User $user)
     {
-        return in_array($user->role, ['Admin', 'Manager']);
+        return $authUser->role === 'Admin' || $authUser->id === $user->id;
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
-    public function create(User $user): bool
+    public function update(User $authUser, User $user)
     {
-        return false;
+        if ($authUser->role === 'Admin') {
+            return $user->role !== 'Admin' || $user->id === $authUser->id;
+        }
+        return $authUser->id === $user->id;
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
-    public function update(User $user, User $model): bool
+    public function delete(User $authUser, User $user)
     {
-        return $user->role === 'Admin';
+        return $authUser->role === 'Admin' && $authUser->id !== $user->id && $user->role !== 'Admin';
     }
 
-    /**
-     * Determine whether the user can delete the model.
-     */
-    public function delete(User $user, User $model): bool
+    public function approve(User $authUser, User $user)
     {
-        return $user->role === 'Admin';
-    }
-
-    public function approveSupplier(User $user, User $target): bool
-    {
-        return $user->role === 'Admin';
-    }
-
-    /**
-     * Determine whether the user can restore the model.
-     */
-    public function restore(User $user, User $model): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
-    public function forceDelete(User $user, User $model): bool
-    {
-        return false;
+        return $authUser->role === 'Admin' && $authUser->id !== $user->id && $user->role === 'Supplier';
     }
 }

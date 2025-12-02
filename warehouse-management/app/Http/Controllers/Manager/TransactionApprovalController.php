@@ -3,84 +3,63 @@
 namespace App\Http\Controllers\Manager;
 
 use App\Http\Controllers\Controller;
+use App\Models\Transaction;
+use App\Services\ManagerTransactionService;
 use Illuminate\Http\Request;
 
 class TransactionApprovalController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    private ManagerTransactionService $transactionService;
+
+    public function __construct(ManagerTransactionService $transactionService)
     {
-        //
+        $this->middleware('auth');
+        $this->transactionService = $transactionService;
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function index(Request $request)
     {
-        //
-    }
+        $this->authorize('viewAny', Transaction::class);
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
+        $query = Transaction::query()
+            ->where('status', 'Pending Approval')
+            ->with(['creator', 'items.product']);
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
+        if ($q = $request->get('q')) {
+            $query->where(function($sub) use ($q) {
+                $sub->where('transaction_number', 'like', "%{$q}%")
+                    ->orWhere('customer_name', 'like', "%{$q}%");
+            });
+        }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
+        $transactions = $query->latest()->paginate(20)->withQueryString();
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return view('manager.transaction_approvals.index', [
+            'transactions' => $transactions,
+        ]);
     }
 
     public function approve(Transaction $transaction)
     {
-        $transaction->update([
-            'status' => 'Approved',
-            'approved_by' => auth()->id(),
-            'approved_at' => now(),
-        ]);
-        return back()->with('success', 'Transaksi disetujui.');
+        $this->authorize('approve', $transaction);
+
+        try {
+            $this->transactionService->approveTransaction($transaction, auth()->id());
+            return back()->with('success', 'Transaksi berhasil disetujui.');
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
     }
 
     public function reject(Transaction $transaction)
     {
-        $transaction->update([
-            'status' => 'Rejected',
-            'approved_by' => auth()->id(),
-            'approved_at' => now(),
-        ]);
-        return back()->with('error', 'Transaksi ditolak.');
-    }
+        $this->authorize('reject', $transaction);
 
+        try {
+            $this->transactionService->rejectTransaction($transaction, auth()->id());
+            return back()->with('success', 'Transaksi berhasil ditolak.');
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
 }

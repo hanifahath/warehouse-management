@@ -14,7 +14,7 @@ return new class extends Migration {
             $table->string('password');
 
             $table->enum('role', ['Admin','Manager','Staff','Supplier'])->default('Staff');
-            $table->boolean('is_approved')->default(true);
+            $table->boolean('is_approved')->default(false);
 
             $table->rememberToken();
             $table->timestamps();

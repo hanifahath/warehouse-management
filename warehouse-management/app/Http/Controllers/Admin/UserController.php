@@ -2,38 +2,34 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UserStoreRequest;
 use App\Http\Requests\UserUpdateRequest;
+use App\Http\Requests\UserStatusUpdateRequest;
 use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
+use App\Services\UserService;
 
 class UserController extends Controller
 {
-    public function __construct()
+    protected $service;
+
+    public function __construct(UserService $service)
     {
-        $this->middleware(['auth', 'role:Admin|Manager']);
+        $this->middleware(['auth', 'role:Admin,Manager']);
+        $this->service = $service;
     }
 
-    public function index(Request $request)
+    public function index()
     {
-        $query = User::query();
-
-        if ($request->filter === 'unapproved_suppliers') {
-            $query->where('role', 'Supplier')->where('is_approved', false);
-        }
-
-        $users = $query->orderBy('name')->paginate(10);
-        $unapprovedSuppliersCount = User::role('Supplier')->where('is_approved', false)->count();
-
+        $users = User::orderBy('name')->paginate(10);
+        $unapprovedSuppliersCount = User::where('role', 'Supplier')->where('is_approved', false)->count();
         return view('users.index', compact('users', 'unapprovedSuppliersCount'));
     }
 
     public function create()
     {
         $this->authorize('create', User::class);
+
         $roles = ['Admin', 'Manager', 'Staff', 'Supplier'];
         return view('users.create', compact('roles'));
     }
@@ -42,15 +38,9 @@ class UserController extends Controller
     {
         $this->authorize('create', User::class);
 
-        User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => $request->role,
-            'is_approved' => $request->role === 'Supplier' ? (bool)$request->is_approved : true,
-        ]);
+        $user = $this->service->createUser($request->validated());
 
-        return redirect()->route('admin.users.index')->with('success', 'Pengguna berhasil ditambahkan.');
+        return redirect()->route('admin.users.index')->with('success', "Pengguna {$user->name} berhasil ditambahkan.");
     }
 
     public function show(User $user)
@@ -62,6 +52,7 @@ class UserController extends Controller
     public function edit(User $user)
     {
         $this->authorize('update', $user);
+
         $roles = ['Admin', 'Manager', 'Staff', 'Supplier'];
         return view('users.edit', compact('user', 'roles'));
     }
@@ -70,37 +61,25 @@ class UserController extends Controller
     {
         $this->authorize('update', $user);
 
-        $data = $request->only(['name', 'email', 'role']);
-        $data['is_approved'] = $request->role === 'Supplier' ? (bool)$request->is_approved : true;
+        $user = $this->service->updateUser($user, $request->validated());
 
-        $user->update($data);
-
-        return redirect()->route('admin.users.index')->with('success', 'Data pengguna berhasil diperbarui.');
+        return redirect()->route('admin.users.index')->with('success', "Data pengguna {$user->name} berhasil diperbarui.");
     }
 
     public function destroy(User $user)
     {
         $this->authorize('delete', $user);
 
-        if (auth()->id() === $user->id) {
-            return back()->with('error', 'Anda tidak dapat menghapus akun Anda sendiri.');
-        }
+        $this->service->deleteUser($user);
 
-        $user->delete();
-        return redirect()->route('admin.users.index')->with('success', 'Pengguna berhasil dihapus.');
+        return redirect()->route('admin.users.index')->with('success', "Pengguna {$user->name} berhasil dihapus.");
     }
 
-    public function updateStatus(User $user, Request $request)
+    public function updateStatus(User $user, UserStatusUpdateRequest $request)
     {
-        $this->authorize('approveSupplier', $user);
+        $this->authorize('approve', $user);
 
-        $request->validate(['is_approved' => 'required|boolean']);
-
-        if ($user->role !== 'Supplier') {
-            return back()->with('error', 'Aksi ini hanya berlaku untuk Supplier.');
-        }
-
-        $user->update(['is_approved' => $request->is_approved]);
+        $user = $this->service->updateStatus($user, $request->validated()['is_approved']);
 
         $message = $request->is_approved
             ? "Supplier {$user->name} berhasil disetujui dan kini dapat login."

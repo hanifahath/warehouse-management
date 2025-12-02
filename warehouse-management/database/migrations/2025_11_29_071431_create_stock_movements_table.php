@@ -12,6 +12,9 @@ return new class extends Migration {
             $table->integer('change');
             $table->string('source_type'); // transaction / restock / manual
             $table->unsignedBigInteger('source_id');
+            $table->integer('before_qty');
+            $table->integer('after_qty');
+            $table->foreignId('performed_by')->constrained('users')->cascadeOnDelete();
             $table->timestamps();
         });
     }

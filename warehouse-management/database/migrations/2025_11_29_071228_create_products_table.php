@@ -12,13 +12,13 @@ return new class extends Migration {
             $table->string('sku')->unique();
             $table->foreignId('category_id')->constrained()->cascadeOnDelete();
             $table->text('description')->nullable();
-            $table->integer('purchase_price');
-            $table->integer('selling_price');
+            $table->decimal('purchase_price',12,2);
+            $table->decimal('selling_price',12,2);
             $table->integer('min_stock')->default(0);
-            $table->integer('stock')->default(0);
+            $table->integer('current_stock')->default(0);
             $table->string('unit');
             $table->string('rack_location')->nullable();
-            $table->string('image')->nullable();
+            $table->string('image_path')->nullable();
             $table->timestamps();
         });
     }

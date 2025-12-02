@@ -13,6 +13,9 @@ class StockMovement extends Model
         'reference_type',
         'reference_id',
         'user_id',
+        'before_qty',
+        'after_qty',
+        'performed_by',
     ];
 
     public function product()

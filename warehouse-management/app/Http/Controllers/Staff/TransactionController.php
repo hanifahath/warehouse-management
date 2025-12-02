@@ -6,238 +6,137 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\TransactionStoreRequest;
 use App\Http\Requests\TransactionUpdateRequest;
 use App\Models\Transaction;
-use App\Models\TransactionItem;
 use App\Models\Product;
-use App\Models\User;
+use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Str;
-use DB;
-use App\Services\InventoryService; // Pastikan ini diimpor dengan benar!
+use Illuminate\Support\Facades\Gate;
 
 class TransactionController extends Controller
 {
-    // Menggunakan nama inventory agar konsisten dengan penggunaan di method approve
-    protected $inventory;
+    protected TransactionService $transactionService;
 
-    // PERBAIKAN UTAMA: Type-hint InventoryService pada constructor
-    public function __construct(InventoryService $inventory)
+    public function __construct(TransactionService $transactionService)
     {
-        // Laravel sekarang tahu harus menginstansiasi class App\Services\InventoryService
-        $this->inventory = $inventory;
-        
-        // Perbaiki property usage di sini agar menggunakan $this->inventory
-        $this->middleware(['auth', 'role:Admin|Manager|Staff']);
+        $this->transactionService = $transactionService;
+
+        $this->middleware('auth');
+        $this->middleware('can:viewAny,' . Transaction::class)->only('index');
+        $this->middleware('can:create,' . Transaction::class)->only(['createIncoming', 'storeIncoming', 'createOutgoing', 'storeOutgoing']);
     }
 
+    /** Daftar transaksi */
     public function index(Request $request): View
     {
         $filterType = $request->query('type');
         $query = Transaction::query();
-        $baseTitle = 'Daftar Semua Transaksi';
+        $title = 'Daftar Semua Transaksi';
 
-        if (auth()->user()->hasRole('Staff')) {
+        if (auth()->user()->role === 'Staff') {
             $query->where('created_by', auth()->id());
-            $baseTitle = 'Daftar Transaksi Saya';
+            $title = 'Daftar Transaksi Saya';
         }
 
         if ($filterType) {
-            if ($filterType === 'Incoming') {
-                $query->where('type', 'Incoming');
-                $baseTitle = 'Daftar Transaksi Masuk' . (auth()->user()->role === 'Staff' ? ' (Saya)' : '');
-            } elseif ($filterType === 'Outgoing') {
-                $query->where('type', 'Outgoing');
-                $baseTitle = 'Daftar Transaksi Keluar' . (auth()->user()->role === 'Staff' ? ' (Saya)' : '');
-            }
+            $query->where('type', $filterType);
+            $title = "Daftar Transaksi {$filterType}" . (auth()->user()->role === 'Staff' ? ' (Saya)' : '');
         }
 
         $transactions = $query->latest()->paginate(10);
 
-        return view('transactions.index', [
-            'transactions' => $transactions,
-            'currentFilter' => $filterType,
-            'title' => $baseTitle,
-        ]);
+        return view('transactions.index', compact('transactions', 'filterType', 'title'));
     }
 
+    /** Lihat detail transaksi */
     public function show(Transaction $transaction): View
     {
+        Gate::authorize('view', $transaction);
         $transaction->load(['items.product', 'creator', 'approver']);
-
-        if (auth()->user()->hasRole('Staff') && $transaction->created_by !== auth()->id()) {
-            abort(403, 'Akses Ditolak.');
-        }
 
         return view('transactions.show', compact('transaction'));
     }
 
+    /** Form buat transaksi masuk */
     public function createIncoming(): View
     {
-        if (auth()->user()->role !== 'Staff') {
-            abort(403, 'Akses Ditolak: Hanya Staff yang bisa membuat transaksi baru.');
-        }
-        $suppliers = User::User::role('Supplier')->where('is_approved', true)->get();
+        $suppliers = $this->transactionService->getApprovedSuppliers();
         $products = Product::all();
 
         return view('transactions.create_incoming', compact('suppliers', 'products'));
     }
 
-    // Menggunakan TransactionStoreRequest
+    /** Simpan transaksi masuk */
     public function storeIncoming(TransactionStoreRequest $request): RedirectResponse
     {
-        // Authorization sudah di Request::authorize()
-        DB::beginTransaction();
+        $data = $request->validated();
+
         try {
-            $transaction = Transaction::create([
-                'transaction_number' => 'IN' . strtoupper(Str::random(10)),
-                'type' => 'Incoming',
-                'supplier_id' => $request->supplier_id,
-                'created_by' => auth()->id(),
-                'status' => 'Pending',
-                'date' => $request->date,
-                'notes' => $request->notes,
-            ]);
+            $transaction = $this->transactionService->createTransaction($data, 'Incoming');
 
-            foreach ($request->items as $item) {
-                $transaction->items()->create($item);
-            }
+            $message = $transaction->status === 'Completed'
+                ? 'Transaksi Masuk berhasil dibuat dan diselesaikan (stok diperbarui).'
+                : 'Transaksi Masuk berhasil dibuat, menunggu persetujuan Manager.';
 
-            DB::commit();
-
-            return redirect()->route('staff.transactions.index')->with('success', 'Transaksi Masuk dibuat, menunggu persetujuan Manager.');
+            return redirect()->route('staff.transactions.index')->with('success', $message);
         } catch (\Exception $e) {
-            DB::rollBack();
-            return redirect()->back()->withInput()->with('error', 'Terjadi kesalahan saat menyimpan transaksi: ' . $e->getMessage());
+            return back()->withInput()->with('error', $e->getMessage());
         }
     }
 
+    /** Form buat transaksi keluar */
     public function createOutgoing(): View
     {
-        if (auth()->user()->role !== 'Staff') {
-            abort(403, 'Akses Ditolak: Hanya Staff yang bisa membuat transaksi baru.');
-        }
         $products = Product::all();
         return view('transactions.create_outgoing', compact('products'));
     }
 
-    // Menggunakan TransactionStoreRequest
+    /** Simpan transaksi keluar */
     public function storeOutgoing(TransactionStoreRequest $request): RedirectResponse
     {
-        DB::beginTransaction();
+        $data = $request->validated();
+
         try {
-            $transaction = Transaction::create([
-                'transaction_number' => 'OUT-' . time(),
-                'type' => 'Outgoing',
-                'status' => 'Pending',
-                'date' => $request->date,
-                'customer_name' => $request->customer_name,
-                'notes' => $request->notes,
-                'created_by' => auth()->id(),
-            ]);
+            $transaction = $this->transactionService->createTransaction($data, 'Outgoing');
 
-            foreach ($request->items as $itemData) {
-                TransactionItem::create([
-                    'transaction_id' => $transaction->id,
-                    'product_id' => $itemData['product_id'],
-                    'quantity' => $itemData['quantity'],
-                    'price_at_transaction' => $itemData['price_at_transaction'],
-                ]);
-            }
+            $message = $transaction->status === 'Completed'
+                ? 'Transaksi Keluar berhasil dibuat dan diselesaikan (stok diperbarui).'
+                : 'Transaksi Keluar berhasil dibuat, menunggu persetujuan Manager.';
 
-            DB::commit();
-
-            return redirect()->route('staff.transactions.show', $transaction->id)
-                ->with('success', 'Transaksi Keluar berhasil dibuat dan menunggu persetujuan.');
+            return redirect()->route('staff.transactions.show', $transaction->id)->with('success', $message);
         } catch (\Exception $e) {
-            DB::rollBack();
-            return redirect()->back()->withInput()->with('error', 'Terjadi kesalahan saat menyimpan transaksi: ' . $e->getMessage());
+            return back()->withInput()->with('error', $e->getMessage());
         }
     }
 
-    public function approve(Transaction $transaction)
+    /** Form edit transaksi */
+    public function edit(Transaction $transaction): View
     {
+        Gate::authorize('update', $transaction);
+
         $transaction->load('items.product');
+        $products = Product::all();
+        $suppliers = $this->transactionService->getApprovedSuppliers();
 
-        DB::beginTransaction();
-        try {
-            foreach ($transaction->items as $item) {
-                // Hitung delta: positif untuk Incoming, negatif untuk Outgoing
-                $delta = $transaction->type === 'Incoming'
-                    ? $item->quantity
-                    : -$item->quantity;
-
-                // Panggil service untuk update stok + catat StockMovement
-                // Penggunaan $this->inventory sekarang sesuai dengan constructor yang baru.
-                $this->inventory->adjustStock(
-                    $item->product,
-                    $delta,
-                    strtolower($transaction->type), // 'incoming' atau 'outgoing'
-                    $transaction 
-                );
-            }
-
-            $transaction->update([
-                'status' => 'Approved',
-                'approved_by' => auth()->id(),
-                'approved_at' => now(),
-            ]);
-
-            DB::commit();
-            return redirect()->route('staff.transactions.show', $transaction->id)
-                ->with('success', 'Transaksi berhasil disetujui.');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', $e->getMessage());
-        }
+        return view('transactions.edit', compact('transaction', 'products', 'suppliers'));
     }
 
-
-    public function reject(Transaction $transaction): RedirectResponse
-    {
-        if (!in_array(auth()->user()->role, ['Admin', 'Manager'])) {
-            return redirect()->back()->with('error', 'Anda tidak memiliki hak akses untuk menolak transaksi.');
-        }
-        if ($transaction->status !== 'Pending') {
-            return redirect()->back()->with('error', 'Transaksi sudah disetujui atau dibatalkan sebelumnya.');
-        }
-
-        try {
-            $transaction->update([
-                'status' => 'Rejected',
-                'approved_by' => auth()->id(),
-                'approved_at' => now(),
-            ]);
-
-            return redirect()->route('staff.transactions.show', $transaction->id)
-                ->with('success', 'Transaksi berhasil ditolak.');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Gagal menolak transaksi: ' . $e->getMessage());
-        }
-    }
-
-    // Contoh method edit/update yang memakai TransactionUpdateRequest
-    public function edit(Transaction $transaction)
-    {
-        // view edit
-    }
-
+    /** Update transaksi */
     public function update(TransactionUpdateRequest $request, Transaction $transaction): RedirectResponse
     {
-        // update hanya field yang diizinkan oleh Request
-        DB::beginTransaction();
+        $data = $request->validated();
+        Gate::authorize('update', $transaction);
+
         try {
-            $transaction->update($request->only(['date', 'notes']));
+            $transaction = $this->transactionService->updateTransaction($transaction, $data);
 
-            if ($request->has('items')) {
-                // logika update items: hapus & recreate atau sync sesuai kebijakan
-            }
+            $message = $transaction->status === 'Completed'
+                ? 'Transaksi berhasil diperbarui dan otomatis diselesaikan.'
+                : 'Transaksi berhasil diperbarui dan diajukan ulang untuk persetujuan.';
 
-            DB::commit();
-            return redirect()->route('staff.transactions.show', $transaction->id)->with('success', 'Transaksi berhasil diperbarui.');
+            return redirect()->route('staff.transactions.show', $transaction->id)->with('success', $message);
         } catch (\Exception $e) {
-            DB::rollBack();
-            return redirect()->back()->withInput()->with('error', 'Gagal memperbarui transaksi: ' . $e->getMessage());
+            return back()->withInput()->with('error', $e->getMessage());
         }
     }
 }

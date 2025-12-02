@@ -6,6 +6,10 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\URL; // Import Facade URL
 use Illuminate\Support\Facades\Schema; // Import Facade Schema (Opsional, tapi sering digunakan)
 use Illuminate\Routing\Router; // Import Router untuk mendaftarkan middleware
+// PERBAIKAN 1: Hapus import yang tidak perlu atau perbaiki typo
+use App\Services\TransactionService;
+use App\Services\StockMovementService; // PERBAIKAN 2: Perbaiki typo 'Seervices' menjadi 'Services'
+// use App\Seervices\StockMovementService; // BARIS TYPO ASLI
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -14,14 +18,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        // Singleton atau bind sesuai kebutuhan
-        $this->app->singleton(\App\Services\TransactionService::class, function ($app) {
-            return new \App\Services\TransactionService();
+        // PERBAIKAN 3: Menyuntikkan StockMovementService ke TransactionService
+        $this->app->singleton(TransactionService::class, function ($app) {
+            // Kita secara eksplisit memberitahu Laravel untuk membuat (make) instance StockMovementService
+            // dan meneruskannya sebagai argumen.
+            return new TransactionService(
+                $app->make(StockMovementService::class)
+            );
         });
 
-        $this->app->singleton(\App\Services\InventoryService::class, function ($app) {
-            return new \App\Services\InventoryService();
-        });
+        // Binding InventoryService, jika ia tidak memiliki dependensi di constructor, 
+        // ini sudah benar, tetapi lebih bersih jika menggunakan bind/singleton tanpa closure
+        $this->app->singleton(\App\Services\InventoryService::class); 
     }
 
     /**
@@ -33,12 +41,11 @@ class AppServiceProvider extends ServiceProvider
         Schema::defaultStringLength(191);
 
         // 2. [SOLUSI ERROR BINDING ROLE] Daftarkan Middleware 'role' secara eksplisit melalui Router
-        // Ini adalah cara yang lebih pasti daripada hanya menggunakan Kernel.php, dan dapat mengatasi masalah cache/binding.
         $router->aliasMiddleware('role', \App\Http\Middleware\RoleMiddleware::class);
         
         // Opsional: Untuk force HTTPS jika diperlukan
         // if (env('APP_ENV') === 'production') {
-        //     URL::forceScheme('https');
+        //     URL::forceScheme('https');
         // }
     }
 }

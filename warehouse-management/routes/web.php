@@ -5,6 +5,11 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Manager\ReportController;
+use App\Http\Controllers\Manager\TransactionApprovalController;
+use App\Http\Controllers\Staff\TransactionController;
 use App\Http\Controllers\Supplier\RestockController;
 
     // --- RUTE LANDING PAGE (ROOT /) ---

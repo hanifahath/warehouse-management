@@ -4,9 +4,9 @@ namespace App\Services;
 
 use App\Models\RestockOrder;
 use App\Models\RestockItem;
+use App\Models\Product;
+use App\Services\TransactionService;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-use App\Models\Product; // Pastikan Product diimpor jika nanti diperlukan di sini
 
 class RestockService
 {
@@ -14,85 +14,109 @@ class RestockService
 
     public function __construct(TransactionService $transactionService)
     {
-        // Inject TransactionService untuk memicu pembaruan stok
         $this->transactionService = $transactionService;
     }
 
-    /**
-     * Membuat Restock Order (PO) baru oleh Manager.
-     * * @param array $data Data dari request (termasuk items).
-     * @param int $managerId ID Manager yang membuat PO.
-     * @param string $poNumber Nomor PO yang sudah dibuat.
-     * @return RestockOrder
-     */
-    public function createOrder(array $data, int $managerId, string $poNumber): RestockOrder
+    public function createRestock(array $data): RestockOrder
     {
         DB::beginTransaction();
         try {
-            // 1. Buat Header Restock Order
-            // Pastikan Anda mempassing 'order_date' dari controller jika diperlukan, 
-            // jika tidak, gunakan now()
+            $poNumber = 'PO-' . now()->format('YmdHis');
+
             $order = RestockOrder::create([
                 'po_number' => $poNumber,
                 'supplier_id' => $data['supplier_id'],
-                'created_by' => $managerId,
-                'order_date' => now(), // Menggunakan waktu saat ini
+                'order_date' => $data['order_date'],
                 'expected_delivery_date' => $data['expected_delivery_date'] ?? null,
-                'status' => 'Pending',
                 'notes' => $data['notes'] ?? null,
+                'status' => 'Pending',
             ]);
 
-            // 2. Simpan Item Restock
             foreach ($data['items'] as $item) {
-                // KRITIS: Tambahkan 'unit_price' ke item PO
-                $order->items()->create([
+                RestockItem::create([
+                    'restock_order_id' => $order->id,
                     'product_id' => $item['product_id'],
+                    'unit_price' => $item['unit_price'],
                     'quantity' => $item['quantity'],
-                    'unit_price' => $item['unit_price'], // ✅ FIX: Simpan harga beli
+                    'subtotal' => $item['unit_price'] * $item['quantity'],
                 ]);
             }
 
             DB::commit();
             return $order;
-
         } catch (\Exception $e) {
             DB::rollBack();
-            throw new \Exception("Gagal membuat Restock Order: " . $e->getMessage());
+            throw new \Exception("Gagal membuat PO: " . $e->getMessage());
         }
     }
 
-    /**
-     * Memproses penerimaan Restock Order (Status: Received) dan memperbarui stok.
-     * * Logika KRITIS: Memanggil TransactionService untuk menjaga konsistensi stok.
-     * * @param RestockOrder $order Model RestockOrder.
-     * @param int $receiverId ID user (Manager/Staff) yang menerima.
-     * @return bool
-     */
-    public function processReceiving(RestockOrder $order, int $receiverId): bool
+    public function updateRestock(RestockOrder $order, array $data): RestockOrder
     {
-        if ($order->status === 'Received') {
-            throw new \Exception("Order sudah diterima sebelumnya.");
+        if ($order->status !== 'Pending') {
+            throw new \Exception("PO hanya bisa diupdate jika status Pending.");
         }
 
         DB::beginTransaction();
         try {
-            // Buat transaksi masuk + update stok
-            $transaction = $this->transactionService
-                ->createIncomingTransactionFromRestock($order, $receiverId);
-
-            // Update status + penerima
             $order->update([
-                'status' => 'Received',
-                'received_at' => now(),
-                'received_by' => $receiverId,
+                'supplier_id' => $data['supplier_id'],
+                'order_date' => $data['order_date'],
+                'expected_delivery_date' => $data['expected_delivery_date'] ?? null,
+                'notes' => $data['notes'] ?? null,
             ]);
 
-            DB::commit();
-            return true;
+            if (isset($data['items'])) {
+                $order->items()->delete();
+                foreach ($data['items'] as $item) {
+                    RestockItem::create([
+                        'restock_order_id' => $order->id,
+                        'product_id' => $item['product_id'],
+                        'unit_price' => $item['unit_price'],
+                        'quantity' => $item['quantity'],
+                        'subtotal' => $item['unit_price'] * $item['quantity'],
+                    ]);
+                }
+            }
 
+            DB::commit();
+            return $order;
         } catch (\Exception $e) {
             DB::rollBack();
-            throw new \Exception("Penerimaan barang gagal: " . $e->getMessage());
+            throw new \Exception("Gagal update PO: " . $e->getMessage());
+        }
+    }
+
+    public function updateStatus(RestockOrder $order, string $status)
+    {
+        DB::beginTransaction();
+        try {
+            $order->update(['status' => $status]);
+
+            if ($status === 'Received') {
+                // Auto create Incoming Transaction
+                $items = $order->items->map(function($item) {
+                    return [
+                        'product_id' => $item->product_id,
+                        'quantity' => $item->quantity,
+                        'price_at_transaction' => $item->unit_price,
+                    ];
+                })->toArray();
+
+                $transactionData = [
+                    'date' => now(),
+                    'notes' => "Incoming from PO {$order->po_number}",
+                    'supplier_id' => $order->supplier_id,
+                    'items' => $items,
+                ];
+
+                $this->transactionService->createTransaction($transactionData, 'Incoming');
+            }
+
+            DB::commit();
+            return $order;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new \Exception("Gagal update status: " . $e->getMessage());
         }
     }
 }

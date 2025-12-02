@@ -3,79 +3,69 @@
 namespace App\Http\Controllers\Manager;
 
 use App\Http\Controllers\Controller;
+use App\Models\Product;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class ReportController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function __construct()
     {
-        //
+        // Otorisasi: Hanya Admin dan Manager yang diizinkan melihat laporan.
+        $this->middleware(['auth', 'role:Admin,Manager']);
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Menampilkan laporan Inventori (Daftar semua produk dengan status stok).
      */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
-    }
-
     public function inventory()
     {
-        return view('manager.reports.inventory');
+        // Ambil semua produk, eager load kategori, dan tampilkan 20 per halaman.
+        $products = Product::with('category')
+                            ->latest()
+                            ->paginate(20);
+
+        return view('manager.reports.inventory', compact('products'));
     }
 
-    public function transactions()
+    /**
+     * Menampilkan laporan Transaksi (Daftar semua transaksi).
+     * Mendukung filter dasar berdasarkan tanggal.
+     */
+    public function transactions(Request $request)
     {
-        return view('manager.reports.transactions');
+        $query = Transaction::with('user', 'transactionDetails');
+
+        // Logika Filter Tanggal
+        if ($startDate = $request->get('start_date')) {
+            $query->whereDate('created_at', '>=', $startDate);
+        }
+        if ($endDate = $request->get('end_date')) {
+            $query->whereDate('created_at', '<=', $endDate);
+        }
+        
+        // Logika Filter Status (Asumsi ada kolom 'status' di model Transaction)
+        if ($status = $request->get('status')) {
+             $query->where('status', $status);
+        }
+
+        $transactions = $query->latest()->paginate(20)->withQueryString();
+
+        return view('manager.reports.transactions', compact('transactions'));
     }
 
+    /**
+     * Menampilkan laporan Stok Rendah (Produk yang stoknya di bawah batas minimum).
+     */
     public function lowStock()
     {
-        return view('manager.reports.low_stock');
+        // Ambil produk di mana 'stock' lebih kecil dari 'min_stock', urutkan dari stok terendah.
+        $lowStockProducts = Product::with('category')
+            ->whereColumn('stock', '<', 'min_stock')
+            ->orderBy('stock', 'asc')
+            ->paginate(20);
+            
+        return view('manager.reports.low_stock', compact('lowStockProducts'));
     }
-
 }

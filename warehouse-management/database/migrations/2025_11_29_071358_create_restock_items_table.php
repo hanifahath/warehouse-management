@@ -11,7 +11,6 @@ return new class extends Migration {
             $table->foreignId('restock_order_id')->constrained()->cascadeOnDelete();
             $table->foreignId('product_id')->constrained()->cascadeOnDelete();
             $table->integer('quantity');
-            // $table->integer('unit_price')->nullable();
             $table->timestamps();
         });
     }

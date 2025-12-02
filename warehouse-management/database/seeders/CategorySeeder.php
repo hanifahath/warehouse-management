@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\Category;
 use Illuminate\Database\Seeder;
+use App\Models\Category;
 
 class CategorySeeder extends Seeder
 {
@@ -12,7 +12,7 @@ class CategorySeeder extends Seeder
         $categories = ['Electronics', 'Furniture', 'Food', 'Clothing'];
 
         foreach ($categories as $c) {
-            Category::create(['name' => $c]);
+            Category::firstOrCreate(['name' => $c]);
         }
     }
 }

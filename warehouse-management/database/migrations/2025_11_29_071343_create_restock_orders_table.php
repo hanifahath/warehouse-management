@@ -9,11 +9,13 @@ return new class extends Migration {
         Schema::create('restock_orders', function (Blueprint $table) {
             $table->id();
             $table->string('po_number')->unique();
-            $table->foreignId('supplier_id')->constrained('users')->cascadeOnDelete();
+
+            $table->foreignId('supplier_id')->nullable()->constrained('users')->nullOnDelete();
             $table->date('order_date');
             $table->date('expected_delivery_date');
             $table->text('notes')->nullable();
             $table->enum('status', ['Pending','Confirmed','In Transit','Received'])->default('Pending');
+            $table->dateTime('received_at')->nullable();
             $table->timestamps();
         });
     }

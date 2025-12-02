@@ -14,12 +14,10 @@ class RestockItem extends Model
         'restock_order_id',
         'product_id',
         'quantity',
-        'subtotal',
     ];
 
     protected $casts = [
         'quantity' => 'integer',
-        'subtotal' => 'float',
     ];
 
     public function restockOrder(): BelongsTo

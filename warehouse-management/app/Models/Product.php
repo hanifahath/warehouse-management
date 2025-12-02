@@ -19,9 +19,9 @@ class Product extends Model
         'purchase_price', 
         'selling_price', 
         'min_stock', 
-        'stock', 
+        'current_stock', 
         'unit', 
-        'location', 
+        'rack_location', 
         'image_path',
     ];
 

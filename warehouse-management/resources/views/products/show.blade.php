@@ -1,100 +1,198 @@
 @extends('layouts.app')
 
-@section('title', 'Product Details')
-
 @section('content')
-    <h1 class="text-2xl font-bold mb-4">Product Details</h1>
+<div class="px-6 py-6">
 
-    <x-warehouse.card>
-        <div class="grid grid-cols-2 gap-4">
+    {{-- HEADER --}}
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">{{ $product->name }}</h1>
+
+        <div class="flex items-center space-x-3">
+            {{-- EDIT --}}
+            @can('update', $product)
+                <a href="{{ route('admin.products.edit', $product) }}"
+                   class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+                    Edit
+                </a>
+            @endcan
+        </div>
+    </div>
+
+
+    {{-- DETAIL CARD --}}
+    <div class="bg-white shadow rounded-lg border border-gray-200 p-6 mb-8">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-12">
+
+            {{-- SKU --}}
             <div>
-                <strong>Name:</strong> {{ $product->name }}
+                <p class="text-gray-500 text-sm">SKU</p>
+                <p class="text-gray-900 font-medium">{{ $product->sku }}</p>
             </div>
+
+            {{-- Category --}}
             <div>
-                <strong>SKU:</strong> {{ $product->sku }}
+                <p class="text-gray-500 text-sm">Category</p>
+                <p class="text-gray-900 font-medium">
+                    {{ $product->category->name ?? '-' }}
+                </p>
             </div>
+
+            {{-- Stock --}}
             <div>
-                <strong>Category:</strong> {{ $product->category->name }}
-            </div>
-            <div>
-                <strong>Unit:</strong> {{ $product->unit }}
-            </div>
-            <div>
-                <strong>Purchase Price:</strong> Rp {{ number_format($product->purchase_price, 0, ',', '.') }}
-            </div>
-            <div>
-                <strong>Selling Price:</strong> Rp {{ number_format($product->selling_price, 0, ',', '.') }}
-            </div>
-            <div>
-                <strong>Stock:</strong>
-                <x-warehouse.badge status="{{ $product->stock < $product->min_stock ? 'low' : 'ok' }}" />
-                {{ $product->stock }}
-            </div>
-            <div>
-                <strong>Minimum Stock:</strong> {{ $product->min_stock }}
-            </div>
-            <div>
-                <strong>Location:</strong> {{ $product->location }}
-            </div>
-            <div>
-                <strong>Description:</strong> {{ $product->description }}
-            </div>
-            <div class="col-span-2">
-                @if($product->image_path)
-                    <img src="{{ asset('storage/' . $product->image_path) }}" 
-                         alt="{{ $product->name }}" 
-                         class="w-48 h-48 object-cover rounded">
+                <p class="text-gray-500 text-sm">Stock</p>
+
+                @if($product->stock === 0)
+                    <span class="px-3 py-1 bg-red-100 text-red-800 rounded text-sm">
+                        Out of Stock
+                    </span>
+                @elseif($product->stock <= $product->min_stock)
+                    <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded text-sm">
+                        Low Stock ({{ $product->stock }})
+                    </span>
+                @else
+                    <span class="px-3 py-1 bg-green-100 text-green-800 rounded text-sm">
+                        {{ $product->stock }}
+                    </span>
                 @endif
             </div>
-        </div>
-    </x-warehouse.card>
 
-    {{-- Tombol Restock Order untuk Manager jika stok rendah --}}
-    @role('Manager')
-        @if($product->stock < $product->min_stock)
-            <div class="mt-4">
-                <form method="POST" action="{{ route('supplier.restocks.createFromProduct', $product) }}">
-                    @csrf
-                    <x-warehouse.button type="primary">
-                        Create Restock Order
-                    </x-warehouse.button>
-                </form>
+            {{-- Rack Location --}}
+            <div>
+                <p class="text-gray-500 text-sm">Rack Location</p>
+                <p class="text-gray-900 font-medium">
+                    {{ $product->location ?? '-' }}
+                </p>
             </div>
-        @endif
-    @endrole
 
-    {{-- Riwayat Transaksi Produk --}}
-    <h2 class="text-xl font-bold mt-6 mb-2">Recent Transactions</h2>
-    <x-warehouse.card>
-        <table class="w-full border-collapse">
-            <thead>
-                <tr class="bg-gray-200">
-                    <th class="p-2">Transaction #</th>
-                    <th class="p-2">Type</th>
-                    <th class="p-2">Date</th>
-                    <th class="p-2">Quantity</th>
-                    <th class="p-2">Status</th>
+            {{-- Purchase Price --}}
+            <div>
+                <p class="text-gray-500 text-sm">Purchase Price</p>
+                <p class="text-gray-900 font-medium">
+                    Rp {{ number_format($product->purchase_price ?? 0, 0, ',', '.') }}
+                </p>
+            </div>
+
+            {{-- Selling Price --}}
+            <div>
+                <p class="text-gray-500 text-sm">Selling Price</p>
+                <p class="text-gray-900 font-medium">
+                    Rp {{ number_format($product->selling_price ?? 0, 0, ',', '.') }}
+                </p>
+            </div>
+
+            {{-- Min Stock --}}
+            <div>
+                <p class="text-gray-500 text-sm">Minimum Stock</p>
+                <p class="text-gray-900 font-medium">{{ $product->min_stock }}</p>
+            </div>
+
+            {{-- Description --}}
+            <div class="md:col-span-2 mt-4">
+                <p class="text-gray-500 text-sm mb-1">Description</p>
+                <p class="text-gray-700 leading-relaxed">
+                    {{ $product->description ?? '-' }}
+                </p>
+            </div>
+
+        </div>
+
+        {{-- RESTOCK BUTTON --}}
+        @can('create', App\Models\RestockOrder::class)
+            @if($product->stock <= $product->min_stock)
+                <div class="mt-6">
+                    <a href="{{ route('restocks.create', ['product' => $product->id]) }}"
+                       class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+                        Create Restock Order
+                    </a>
+                </div>
+            @endif
+        @endcan
+
+    </div>
+
+
+
+    {{-- TRANSACTION HISTORY --}}
+    <h2 class="text-xl font-bold text-gray-900 mb-4">Recent Transactions</h2>
+
+    <div class="bg-white shadow rounded-lg border border-gray-200 overflow-hidden">
+
+        <table class="w-full">
+            <thead class="bg-gray-50 text-gray-600 text-sm border-b">
+                <tr>
+                    <th class="px-4 py-3 text-left font-medium">Type</th>
+                    <th class="px-4 py-3 text-left font-medium">Quantity</th>
+                    <th class="px-4 py-3 text-left font-medium">Status</th>
+                    <th class="px-4 py-3 text-left font-medium">Date</th>
+                    <th class="px-4 py-3 text-right font-medium">Details</th>
                 </tr>
             </thead>
-            <tbody>
-                @forelse($recentTransactions as $trx)
-                    <tr class="border-b">
-                        <td class="p-2">{{ $trx->transaction->transaction_number }}</td>
-                        <td class="p-2">{{ $trx->transaction->type }}</td>
-                        <td class="p-2">{{ $trx->transaction->date->format('d M Y') }}</td>
-                        <td class="p-2">{{ $trx->quantity }}</td>
-                        <td class="p-2">
-                            <x-warehouse.badge status="{{ strtolower($trx->transaction->status) }}" />
+
+            <tbody class="text-sm text-gray-700">
+
+                @forelse ($recentTransactions as $tr)
+                    <tr class="border-b last:border-0 hover:bg-gray-50">
+
+                        {{-- TYPE --}}
+                        <td class="px-4 py-3">
+                            @if(strtolower($tr->type) === 'incoming')
+                                <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
+                                    Incoming
+                                </span>
+                            @else
+                                <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                                    Outgoing
+                                </span>
+                            @endif
+                        </td>
+
+                        {{-- QUANTITY --}}
+                        <td class="px-4 py-3">{{ $tr->quantity }}</td>
+
+                        {{-- STATUS --}}
+                        <td class="px-4 py-3">
+                            @if(strtolower($tr->status) === 'approved' || strtolower($tr->status) === 'completed')
+                                <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
+                                    Approved
+                                </span>
+                            @elseif(strtolower($tr->status) === 'pending')
+                                <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded">
+                                    Pending
+                                </span>
+                            @else
+                                <span class="px-2 py-1 bg-red-100 text-red-800 text-xs rounded">
+                                    Rejected
+                                </span>
+                            @endif
+                        </td>
+
+                        {{-- DATE --}}
+                        <td class="px-4 py-3">
+                            {{ \Carbon\Carbon::parse($tr->date ?? $tr->created_at)->format('d M Y H:i') }}
+                        </td>
+
+                        {{-- DETAILS --}}
+                        <td class="px-4 py-3 text-right">
+                            <a href="{{ route('transactions.show', $tr) }}"
+                               class="text-indigo-600 hover:underline">
+                                View
+                            </a>
                         </td>
                     </tr>
+
                 @empty
                     <tr>
-                        <td colspan="5" class="text-center p-4 text-gray-500">
+                        <td colspan="5" class="px-4 py-6 text-center text-gray-500">
                             No recent transactions found.
                         </td>
                     </tr>
                 @endforelse
+
             </tbody>
         </table>
-    </x-warehouse.card>
+
+    </div>
+
+</div>
 @endsection

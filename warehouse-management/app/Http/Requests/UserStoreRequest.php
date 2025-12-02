@@ -9,7 +9,6 @@ class UserStoreRequest extends FormRequest
 {
     public function authorize()
     {
-        // Hanya Admin yang boleh membuat user manual
         return $this->user() && $this->user()->role === 'Admin';
     }
 
