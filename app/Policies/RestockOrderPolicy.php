@@ -33,7 +33,7 @@ class RestockOrderPolicy
 
         // Manager hanya bisa lihat yang mereka buat
         if ($user->isManager()) {
-            return $restockOrder->manager_id === $user->id;
+            return true;
         }
 
         // Supplier hanya bisa lihat yang untuk mereka dan sudah approved
