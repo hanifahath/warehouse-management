@@ -4,27 +4,23 @@ namespace App\Http\Requests;
 
 use App\Models\User;
 use App\Models\Product;
+use App\Models\RestockOrder;
 
 class TransactionStoreRequest extends TransactionRequest
 {
+    public function authorize()
+    {
+        return auth()->check();
+    }
+
     protected function isIncoming(): bool
     {
-        // Debug: Log untuk memastikan
-        \Log::info('=== TransactionStoreRequest Debug ===');
-        \Log::info('Route Name:', [$this->route()->getName() ?? 'null']);
-        \Log::info('Path:', [$this->path()]);
-        \Log::info('Method:', [$this->method()]);
-        
-        // Deteksi dari route name
         $isIncoming = str_contains($this->route()->getName() ?? '', 'incoming');
-        \Log::info('Is Incoming detected:', [$isIncoming]);
-        
         return $isIncoming;
     }
     
     protected function incomingRules(): array
     {
-        \Log::info('Applying INCOMING rules');
 
         return [
             'supplier_id' => [
@@ -41,13 +37,29 @@ class TransactionStoreRequest extends TransactionRequest
                     }
                 }
             ],
-            // 'customer_name' => 'nullable|string|max:255', // Optional untuk incoming
+            'restock_order_id' => [
+                'nullable',
+                'integer',
+                'exists:restock_orders,id',
+                function ($attribute, $value, $fail) {
+                    if (!$value) return;
+                    
+                    $restockOrder = RestockOrder::find($value);
+                    
+                    if (strtolower($restockOrder->status) !== 'received') {
+                        $fail('Restock order harus berstatus "Received" untuk bisa diproses.');
+                    }
+                    
+                    if ($restockOrder->transactions()->exists()) {
+                        $fail('Restock order ini sudah memiliki transaksi penerimaan.');
+                    }
+                }
+            ],
         ];
     }
     
     protected function outgoingRules(): array
     {
-        \Log::info('Applying OUTGOING rules');
         
         return [
             'customer_name' => 'required|string|max:255',
@@ -73,6 +85,18 @@ class TransactionStoreRequest extends TransactionRequest
         };
     }
     
+    // Tambah method ini untuk implement abstract parent class
+    protected function commonRules(): array
+    {
+        return [
+            'date' => 'required|date',
+            'notes' => 'nullable|string|max:1000',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.quantity' => 'required|integer|min:1',
+        ];
+    }
+    
     public function messages()
     {
         return [
@@ -83,9 +107,7 @@ class TransactionStoreRequest extends TransactionRequest
             'items.*.product_id.required' => 'Produk harus dipilih.',
             'items.*.quantity.required' => 'Quantity harus diisi.',
             'items.*.quantity.min' => 'Quantity minimal 1.',
-            'items.*.price_at_transaction.required' => 'Harga harus diisi.',
-            'items.*.price_at_transaction.min' => 'Harga tidak boleh negatif.',
+            'restock_order_id.exists' => 'Restock order tidak ditemukan.',
         ];
     }
-
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Transaction;
 use App\Models\User;
+Use App\Models\RestockOrder;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use App\Http\Requests\{
@@ -40,13 +41,21 @@ class TransactionController extends Controller
         ));
     }
 
-    public function createIncoming()
+    public function createIncoming(Request $request)
     {
         $this->authorize('create', Transaction::class);
         
+        $restockOrders = RestockOrder::readyForReceiving()
+            ->orderBy('po_number', 'desc')
+            ->get(['id', 'po_number', 'supplier_id']);
+
         return view('transactions.create_incoming', [
             'products' => $this->transactionService->getAvailableProducts(),
-            'suppliers' => $this->transactionService->getApprovedSuppliers()
+            'suppliers' => $this->transactionService->getApprovedSuppliers(),
+            'restockOrders' => $restockOrders,
+            'selectedRestockOrder' => $request->has('restock_order_id') 
+                ? RestockOrder::find($request->restock_order_id)
+                : null,
         ]);
     }
 
@@ -54,6 +63,22 @@ class TransactionController extends Controller
     {
         $this->authorize('create', Transaction::class);
         
+        $validated = $request->validated();
+        
+        if ($request->has('restock_order_id') && !empty($request->restock_order_id)) {
+            $validated['restock_order_id'] = $request->restock_order_id;
+            
+            $restockOrder = RestockOrder::findOrFail($validated['restock_order_id']);
+            
+            if (empty($validated['supplier_id'])) {
+                $validated['supplier_id'] = $restockOrder->supplier_id;
+            }
+            
+            $validated['restock_status'] = 'pending_receipt';
+        } else {
+            $validated['restock_status'] = 'not_restock';
+        }
+
         return $this->handleTransactionCreation($request->validated(), 'incoming');
     }
 
@@ -62,13 +87,25 @@ class TransactionController extends Controller
         $this->authorize('create', Transaction::class);
         
         return view('transactions.create_outgoing', [
-            'products' => $this->transactionService->getAvailableProducts()
+            'products' => $this->transactionService->getAvailableProducts(),
+            'restockOrders' => [],
         ]);
     }
 
     public function storeOutgoing(TransactionStoreRequest $request)
     {
         $this->authorize('create', Transaction::class);
+
+        if ($request->has('restock_order_id') && !empty($request->restock_order_id)) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors([
+                    'restock_order_id' => 'Restock order can only be linked to Incoming transactions'
+                ]);
+        }
+        
+        $validated = $request->validated();
+        $validated['restock_status'] = 'not_restock';
         
         return $this->handleTransactionCreation($request->validated(), 'outgoing');
     }
@@ -226,12 +263,16 @@ class TransactionController extends Controller
     private function handleTransactionCreation(array $data, string $type)
     {
         try {
-            $transaction = $this->transactionService->createTransaction($data, $type);
+            // Delegate ke service
+            $transaction = $this->transactionService->createTransaction($data, $type, auth()->user());
             
             return redirect()->route('transactions.show', $transaction)
-                ->with('success', 'Transaksi berhasil dibuat. Menunggu approval manager.');
+                ->with('success', ucfirst($type) . ' transaction created successfully.');
+                
         } catch (\Exception $e) {
-            return back()->withInput()->with('error', 'Gagal: ' . $e->getMessage());
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['error' => 'Failed to create transaction: ' . $e->getMessage()]);
         }
     }
 
@@ -258,5 +299,41 @@ class TransactionController extends Controller
                 ->orderBy('name')
                 ->get(),
         ];
+    }
+
+    public function getRestockOrderItems(Request $request, $id)
+    {
+        $this->authorize('create', Transaction::class);
+        
+        try {
+            $restockOrder = RestockOrder::with(['items.product'])
+                ->where('status', 'received')
+                ->findOrFail($id);
+            
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'supplier_id' => $restockOrder->supplier_id,
+                    'items' => $restockOrder->items->map(function ($item) {
+                        return [
+                            'product_id' => $item->product_id,
+                            'product_name' => $item->product->name,
+                            'sku' => $item->product->sku,
+                            'ordered_quantity' => $item->quantity,
+                            'unit' => $item->product->unit,
+                            'current_stock' => $item->product->current_stock,
+                            'price' => $item->product->purchase_price,
+                        ];
+                    }),
+                    'po_number' => $restockOrder->po_number,
+                    'order_date' => $restockOrder->order_date->format('Y-m-d'),
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Restock order not found or not ready for receiving'
+            ], 404);
+        }
     }
 }

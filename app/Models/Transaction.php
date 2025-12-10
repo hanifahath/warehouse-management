@@ -19,10 +19,12 @@ class Transaction extends Model
         'date',
         'approved_at',
         'notes',
-        'rejection_reason', // ✅ TAMBAHKAN
-        'completed_at',     // ✅ TAMBAHKAN
-        'shipped_at',       // ✅ TAMBAHKAN
-        'total_amount',     // ✅ TAMBAHKAN jika belum ada
+        'rejection_reason', 
+        'completed_at',     
+        'shipped_at',      
+        'total_amount',    
+        'restock_order_id',
+        'restock_status',
     ];
 
     protected $casts = [
@@ -57,6 +59,11 @@ class Transaction extends Model
     public function stockMovements()
     {
         return $this->morphMany(StockMovement::class, 'reference');
+    }
+
+    public function restockOrder(): BelongsTo
+    {
+        return $this->belongsTo(RestockOrder::class, 'restock_order_id');
     }
 
     // ============= ATTRIBUTE ACCESSORS =============
@@ -179,6 +186,11 @@ class Transaction extends Model
         return strtolower($this->type) === 'outgoing';
     }
 
+    public function isRestockRelated(): bool
+    {
+        return !is_null($this->restock_order_id);
+    }
+
     public function canBeEdited(): bool
     {
         return $this->isPending() && empty($this->approved_by);
@@ -260,6 +272,16 @@ class Transaction extends Model
         return $query->where('status', 'pending');
     }
 
+    public function scopeRestockRelated($query)
+    {
+        return $query->whereNotNull('restock_order_id');
+    }
+
+    public function scopeNotRestockRelated($query)
+    {
+        return $query->whereNull('restock_order_id');
+    }
+    
     public function scopeApproved($query)
     {
         return $query->where('status', 'approved');

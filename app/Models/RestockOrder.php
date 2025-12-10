@@ -21,7 +21,7 @@ class RestockOrder extends Model
         'received_at',
         'cancelled_at',
         'cancellation_reason',
-        'total_amount', // ✅ TAMBAHKAN jika belum ada
+        'total_amount', 
     ];
 
     protected $casts = [
@@ -76,6 +76,11 @@ class RestockOrder extends Model
         return $this->belongsTo(User::class, 'received_by');
     }
 
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class, 'restock_order_id');
+    }
+
     // ============= ATTRIBUTE ACCESSORS =============
     public function getTotalAmountAttribute(): float
     {
@@ -114,6 +119,11 @@ class RestockOrder extends Model
         return (int) $this->supplier_id === (int) $user->id;
     }
 
+    public function hasTransactions(): bool
+    {
+        return $this->transactions()->exists();
+    }
+
     public function getIsEditableAttribute(): bool
     {
         return $this->status === self::STATUS_PENDING;
@@ -127,6 +137,11 @@ class RestockOrder extends Model
     public function getIsShippableAttribute(): bool
     {
         return $this->status === self::STATUS_CONFIRMED;
+    }
+
+    public function getTransactionsCountAttribute(): int
+    {
+        return $this->transactions()->count();
     }
 
     public function getIsReceivableAttribute(): bool
@@ -197,6 +212,17 @@ class RestockOrder extends Model
         return $query->where('status', self::STATUS_IN_TRANSIT);
     }
 
+    public function scopeWithoutTransaction($query)
+    {
+        return $query->whereDoesntHave('transactions');
+    }
+
+    public function scopeReadyForReceiving($query)
+    {
+        return $query->where('status', 'received')
+                    ->whereDoesntHave('transactions');
+    }
+    
     public function scopeReceived($query)
     {
         return $query->where('status', self::STATUS_RECEIVED);

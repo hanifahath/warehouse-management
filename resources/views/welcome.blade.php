@@ -285,79 +285,78 @@
     </section>
 
     <!-- CTA Section -->
-<section class="bg-gradient-to-r from-indigo-600 to-purple-600 my-12 md:my-16">
-    <div class="container-custom py-16 md:py-20">
-        <div class="text-center">
-            <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">
-                Ready to Streamline Your Warehouse?
-            </h2>
-            <p class="text-indigo-100 text-lg md:text-xl mb-8 max-w-2xl mx-auto">
-                Mulai gunakan sistem manajemen gudang yang modern dan efisien
-            </p>
-            <div class="flex flex-col sm:flex-row justify-center gap-4">
-                <a href="{{ route('login') }}" 
-                   class="bg-white text-indigo-600 hover:bg-gray-100 px-8 py-3 rounded-xl font-semibold transition-all inline-flex items-center justify-center gap-2 text-lg shadow-lg hover:shadow-xl">
-                    <i class="fas fa-sign-in-alt"></i>
-                    Login to System
-                </a>
-                <a href="{{ route('register') }}" 
-                   class="border-2 border-white text-white hover:bg-white hover:text-indigo-600 px-8 py-3 rounded-xl font-semibold transition-all inline-flex items-center justify-center gap-2 text-lg shadow-lg hover:shadow-xl">
-                    <i class="fas fa-user-plus"></i>
-                    Register as Supplier
-                </a>
+    <section class="bg-gradient-to-r from-indigo-600 to-purple-600 py-16 md:py-16 my-12">
+        <div class="container-custom py-16 md:py-20">
+            <div class="text-center">
+                <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">
+                    Ready to Streamline Your Warehouse?
+                </h2>
+                <p class="text-indigo-100 text-lg md:text-xl mb-8 max-w-2xl mx-auto">
+                    Mulai gunakan sistem manajemen gudang yang modern dan efisien
+                </p>
+                <div class="flex flex-col sm:flex-row justify-center gap-4">
+                    <a href="{{ route('login') }}" 
+                    class="bg-white text-indigo-600 hover:bg-gray-100 px-8 py-3 rounded-xl font-semibold transition-all inline-flex items-center justify-center gap-2 text-lg shadow-lg hover:shadow-xl">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Login to System
+                    </a>
+                    <a href="{{ route('register') }}" 
+                    class="border-2 border-white text-white hover:bg-white hover:text-indigo-600 px-8 py-3 rounded-xl font-semibold transition-all inline-flex items-center justify-center gap-2 text-lg shadow-lg hover:shadow-xl">
+                        <i class="fas fa-user-plus"></i>
+                        Register as Supplier
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+<footer class="bg-gray-900 text-white">
+    <div class="container-custom py-8">
+        <div class="flex flex-col lg:flex-row justify-between items-start gap-6">
+
+            <!-- Brand -->
+            <div class="lg:w-1/4">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center shadow">
+                        <i class="fas fa-warehouse text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <span class="text-xl font-bold block">WMS</span>
+                        <span class="text-gray-400 text-sm">Warehouse Management System</span>
+                    </div>
+                </div>
+                <p class="text-gray-400 text-sm leading-relaxed">
+                    Sistem manajemen gudang modern untuk bisnis yang efisien dan produktif.
+                </p>
+            </div>
+
+            <!-- Contact -->
+            <div id="contact" class="lg:w-1/4">
+                <h4 class="text-lg font-semibold mb-4">Contact Us</h4>
+                <div class="space-y-2">
+                    <p class="flex items-center gap-2 text-gray-300 text-sm">
+                        <i class="fas fa-envelope text-indigo-400"></i>
+                        support@warehouse-system.com
+                    </p>
+                    <p class="flex items-center gap-2 text-gray-300 text-sm">
+                        <i class="fas fa-phone text-indigo-400"></i>
+                        +62 812 3456 7890
+                    </p>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="border-t border-gray-800 mt-8 pt-4">
+            <div class="flex flex-col md:flex-row justify-between items-center text-gray-500 text-sm gap-2">
+                <p>© {{ date('Y') }} Warehouse Management System.</p>
+                <p>Developed with Laravel & Tailwind CSS • v1.0.0</p>
             </div>
         </div>
     </div>
-</section>
+</footer>
 
-<div class="my-12"></div>
-
-    <!-- Footer -->
-    <footer class="bg-gray-900 text-white">
-        <div class="container-custom py-12">
-            <div class="flex flex-col lg:flex-row justify-between items-start gap-10">
-                <div class="lg:w-1/3">
-                    <div class="flex items-center gap-4 mb-6">
-                        <div class="w-12 h-12 bg-indigo-500 rounded-xl flex items-center justify-center shadow">
-                            <i class="fas fa-warehouse text-white text-xl"></i>
-                        </div>
-                        <div>
-                            <span class="text-2xl font-bold block">WMS</span>
-                            <span class="text-gray-400">Warehouse Management System</span>
-                        </div>
-                    </div>
-                    <p class="text-gray-400 text-lg">
-                        Sistem manajemen gudang modern untuk bisnis yang efisien dan produktif.
-                    </p>
-                </div>
-                
-                <div id="contact" class="lg:w-1/3">
-                    <h4 class="text-xl font-bold mb-6">Contact Us</h4>
-                    <div class="space-y-4">
-                        <p class="flex items-center gap-3 text-gray-300">
-                            <i class="fas fa-envelope text-indigo-400 text-lg"></i>
-                            support@warehouse-system.com
-                        </p>
-                        <p class="flex items-center gap-3 text-gray-300">
-                            <i class="fas fa-phone text-indigo-400 text-lg"></i>
-                            +62 812 3456 7890
-                        </p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="border-t border-gray-800 mt-12 pt-8">
-                <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-                    <p class="text-gray-500 text-center md:text-left">
-                        © {{ date('Y') }} Warehouse Management System. All rights reserved.
-                    </p>
-                    <p class="text-gray-500">
-                        Developed with Laravel & Tailwind CSS • v1.0.0
-                    </p>
-                </div>
-            </div>
-        </div>
-    </footer>
 
 </body>
 </html>

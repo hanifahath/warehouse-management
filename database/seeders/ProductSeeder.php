@@ -10,24 +10,15 @@ use Illuminate\Support\Str;
 
 class ProductSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        // Nonaktifkan foreign key checks
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         DB::table('products')->truncate();
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
         
-        // Inisialisasi Faker
-        $faker = \Faker\Factory::create();
-        
-        // Ambil semua kategori sebagai array biasa
         $categories = Category::all();
         
         $products = [
-            // ===================== LAPTOPS & NOTEBOOKS =====================
             [
                 'sku' => 'LAP-DELL-001',
                 'name' => 'Dell XPS 13 Laptop',
@@ -39,7 +30,7 @@ class ProductSeeder extends Seeder
                 'current_stock' => 12,
                 'unit' => 'pcs',
                 'rack_location' => 'A1-01',
-                'image_path' => $faker->imageUrl(640, 480, 'laptop', true, 'Dell XPS'),
+                'image_path' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -54,7 +45,7 @@ class ProductSeeder extends Seeder
                 'current_stock' => 8,
                 'unit' => 'pcs',
                 'rack_location' => 'A1-02',
-                'image_path' => $faker->imageUrl(640, 480, 'laptop', true, 'MacBook Pro'),
+                'image_path' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -69,12 +60,10 @@ class ProductSeeder extends Seeder
                 'current_stock' => 6,
                 'unit' => 'pcs',
                 'rack_location' => 'A1-03',
-                'image_path' => $faker->imageUrl(640, 480, 'laptop', true, 'ThinkPad'),
+                'image_path' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
-
-            // ===================== DESKTOP COMPUTERS =====================
             [
                 'sku' => 'DESK-ASUS-001',
                 'name' => 'ASUS Gaming Desktop',
@@ -86,7 +75,7 @@ class ProductSeeder extends Seeder
                 'current_stock' => 5,
                 'unit' => 'pcs',
                 'rack_location' => 'B1-01',
-                'image_path' => $faker->imageUrl(640, 480, 'computer', true, 'Gaming PC'),
+                'image_path' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -101,12 +90,10 @@ class ProductSeeder extends Seeder
                 'current_stock' => 15,
                 'unit' => 'pcs',
                 'rack_location' => 'B1-02',
-                'image_path' => $faker->imageUrl(640, 480, 'computer', true, 'Office Desktop'),
+                'image_path' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
-
-            // ===================== COMPUTER COMPONENTS =====================
             [
                 'sku' => 'CPU-INTEL-001',
                 'name' => 'Intel Core i9-13900K',
@@ -118,7 +105,7 @@ class ProductSeeder extends Seeder
                 'current_stock' => 25,
                 'unit' => 'pcs',
                 'rack_location' => 'C1-01',
-                'image_path' => $faker->imageUrl(640, 480, 'electronics', true, 'CPU Processor'),
+                'image_path' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -133,7 +120,7 @@ class ProductSeeder extends Seeder
                 'current_stock' => 40,
                 'unit' => 'pcs',
                 'rack_location' => 'C1-02',
-                'image_path' => $faker->imageUrl(640, 480, 'electronics', true, 'RAM Memory'),
+                'image_path' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -148,12 +135,10 @@ class ProductSeeder extends Seeder
                 'current_stock' => 8,
                 'unit' => 'pcs',
                 'rack_location' => 'C1-03',
-                'image_path' => $faker->imageUrl(640, 480, 'electronics', true, 'Graphics Card'),
+                'image_path' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
-
-            // ===================== COMPUTER PERIPHERALS =====================
             [
                 'sku' => 'MON-LG-001',
                 'name' => 'LG UltraGear 27" Monitor',
@@ -165,7 +150,7 @@ class ProductSeeder extends Seeder
                 'current_stock' => 18,
                 'unit' => 'pcs',
                 'rack_location' => 'D1-01',
-                'image_path' => $faker->imageUrl(640, 480, 'technology', true, 'Gaming Monitor'),
+                'image_path' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -180,7 +165,7 @@ class ProductSeeder extends Seeder
                 'current_stock' => 30,
                 'unit' => 'pcs',
                 'rack_location' => 'D1-02',
-                'image_path' => $faker->imageUrl(640, 480, 'keyboard', true, 'Wireless Keyboard'),
+                'image_path' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -195,12 +180,10 @@ class ProductSeeder extends Seeder
                 'current_stock' => 35,
                 'unit' => 'pcs',
                 'rack_location' => 'D1-03',
-                'image_path' => $faker->imageUrl(640, 480, 'mouse', true, 'Gaming Mouse'),
+                'image_path' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
-
-            // ===================== STORAGE DEVICES =====================
             [
                 'sku' => 'SSD-SAMSUNG-001',
                 'name' => 'Samsung 980 Pro 2TB',
@@ -212,7 +195,7 @@ class ProductSeeder extends Seeder
                 'current_stock' => 50,
                 'unit' => 'pcs',
                 'rack_location' => 'E1-01',
-                'image_path' => $faker->imageUrl(640, 480, 'technology', true, 'SSD Drive'),
+                'image_path' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -227,12 +210,10 @@ class ProductSeeder extends Seeder
                 'current_stock' => 60,
                 'unit' => 'pcs',
                 'rack_location' => 'E1-02',
-                'image_path' => $faker->imageUrl(640, 480, 'hardware', true, 'Hard Drive'),
+                'image_path' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
-
-            // ===================== NETWORKING EQUIPMENT =====================
             [
                 'sku' => 'ROUTER-TPLINK-001',
                 'name' => 'TP-Link Archer AX73',
@@ -244,12 +225,10 @@ class ProductSeeder extends Seeder
                 'current_stock' => 22,
                 'unit' => 'pcs',
                 'rack_location' => 'F1-01',
-                'image_path' => $faker->imageUrl(640, 480, 'network', true, 'WiFi Router'),
+                'image_path' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
-
-            // ===================== PRINTERS & SCANNERS =====================
             [
                 'sku' => 'PRINTER-HP-001',
                 'name' => 'HP LaserJet Pro M404dn',
@@ -261,12 +240,10 @@ class ProductSeeder extends Seeder
                 'current_stock' => 14,
                 'unit' => 'pcs',
                 'rack_location' => 'G1-01',
-                'image_path' => $faker->imageUrl(640, 480, 'office', true, 'Laser Printer'),
+                'image_path' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
-
-            // ===================== SMARTPHONES =====================
             [
                 'sku' => 'PHONE-IPHONE-001',
                 'name' => 'iPhone 15 Pro 256GB',
@@ -278,7 +255,7 @@ class ProductSeeder extends Seeder
                 'current_stock' => 20,
                 'unit' => 'pcs',
                 'rack_location' => 'H1-01',
-                'image_path' => $faker->imageUrl(640, 480, 'phone', true, 'iPhone 15'),
+                'image_path' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -293,12 +270,10 @@ class ProductSeeder extends Seeder
                 'current_stock' => 18,
                 'unit' => 'pcs',
                 'rack_location' => 'H1-02',
-                'image_path' => $faker->imageUrl(640, 480, 'phone', true, 'Samsung Galaxy'),
+                'image_path' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
-
-            // ===================== AUDIO EQUIPMENT =====================
             [
                 'sku' => 'HEADPHONE-SONY-001',
                 'name' => 'Sony WH-1000XM5',
@@ -310,12 +285,10 @@ class ProductSeeder extends Seeder
                 'current_stock' => 28,
                 'unit' => 'pcs',
                 'rack_location' => 'I1-01',
-                'image_path' => $faker->imageUrl(640, 480, 'headphones', true, 'Noise Cancelling'),
+                'image_path' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
-
-            // ===================== CABLES & CONNECTORS =====================
             [
                 'sku' => 'CABLE-HDMI-001',
                 'name' => 'HDMI 2.1 Cable 2m',
@@ -327,7 +300,7 @@ class ProductSeeder extends Seeder
                 'current_stock' => 200,
                 'unit' => 'pcs',
                 'rack_location' => 'J1-01',
-                'image_path' => $faker->imageUrl(640, 480, 'cable', true, 'HDMI Cable'),
+                'image_path' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -342,12 +315,10 @@ class ProductSeeder extends Seeder
                 'current_stock' => 300,
                 'unit' => 'pcs',
                 'rack_location' => 'J1-02',
-                'image_path' => $faker->imageUrl(640, 480, 'cable', true, 'USB-C Cable'),
+                'image_path' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
-
-            // ===================== LOW STOCK ITEMS (FOR TESTING) =====================
             [
                 'sku' => 'LOW-STOCK-001',
                 'name' => 'Crucial P3 500GB SSD',
@@ -356,10 +327,10 @@ class ProductSeeder extends Seeder
                 'purchase_price' => 650000,
                 'selling_price' => 850000,
                 'min_stock' => 10,
-                'current_stock' => 3, // LOW STOCK
+                'current_stock' => 3,
                 'unit' => 'pcs',
                 'rack_location' => 'E1-03',
-                'image_path' => $faker->imageUrl(640, 480, 'technology', true, 'SSD'),
+                'image_path' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -371,22 +342,19 @@ class ProductSeeder extends Seeder
                 'purchase_price' => 19500000,
                 'selling_price' => 23500000,
                 'min_stock' => 3,
-                'current_stock' => 0, // OUT OF STOCK
+                'current_stock' => 0,
                 'unit' => 'pcs',
                 'rack_location' => 'A1-04',
-                'image_path' => $faker->imageUrl(640, 480, 'laptop', true, 'Surface Pro'),
+                'image_path' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
         ];
 
-        // Insert semua produk sekaligus (lebih efisien)
         DB::table('products')->insert($products);
         
-        // Tambahkan lebih banyak produk secara acak jika perlu
-        $this->generateRandomProducts($categories, $faker, 30);
+        $this->generateRandomProducts($categories, 30);
 
-        // Generate summary statistics
         $totalProducts = Product::count();
         $lowStockCount = Product::whereRaw('current_stock <= min_stock AND current_stock > 0')->count();
         $outOfStockCount = Product::where('current_stock', 0)->count();
@@ -398,46 +366,37 @@ class ProductSeeder extends Seeder
         $this->command->info("Out of stock items: {$outOfStockCount}");
         $this->command->info("Total stock value: Rp " . number_format($totalStockValue, 0, ',', '.'));
         
-        // Show some sample products
-        $this->command->line('');
-        $this->command->info('=== SAMPLE PRODUCTS ===');
         $sampleProducts = Product::with('category')->inRandomOrder()->limit(5)->get();
+        $this->command->info('Sample products:');
         foreach ($sampleProducts as $product) {
-            $status = $product->current_stock == 0 ? '❌ Out of Stock' : 
-                     ($product->current_stock <= $product->min_stock ? '⚠️ Low Stock' : '✅ Healthy');
+            $status = $product->current_stock == 0 ? 'Out of Stock' : 
+                     ($product->current_stock <= $product->min_stock ? 'Low Stock' : 'Healthy');
             $this->command->info("• {$product->name} ({$product->sku})");
-            $this->command->info("  Category: {$product->category->name}, Stock: {$product->current_stock} {$product->unit}");
-            $this->command->info("  Status: {$status}");
-            $this->command->info("  Image URL: {$product->image_path}");
-            $this->command->info("");
+            $this->command->info("  Category: {$product->category->name}, Stock: {$product->current_stock} {$product->unit}, Status: {$status}");
         }
     }
 
-    /**
-     * Generate additional random products
-     */
-    private function generateRandomProducts($categories, $faker, $count = 30): void
+    private function generateRandomProducts($categories, $count = 30): void
     {
         $randomProducts = [];
         $brands = ['Dell', 'HP', 'Lenovo', 'ASUS', 'Acer', 'MSI', 'Logitech', 'Razer', 'Samsung', 'Apple', 'Sony', 'Bose'];
         
         for ($i = 0; $i < $count; $i++) {
             $category = $categories->random();
-            $brand = $faker->randomElement($brands);
-            $name = "{$brand} {$faker->words(2, true)}";
+            $brand = $brands[array_rand($brands)];
             
             $randomProducts[] = [
-                'sku' => 'RND-' . strtoupper($faker->bothify('???-##??')),
-                'name' => $name,
+                'sku' => 'RND-' . strtoupper(Str::random(3)) . '-' . rand(1000, 9999),
+                'name' => $brand . ' ' . Str::random(10),
                 'category_id' => $category->id,
-                'description' => $faker->sentence(15),
-                'purchase_price' => $faker->numberBetween(500000, 15000000),
-                'selling_price' => $faker->numberBetween(750000, 20000000),
-                'min_stock' => $faker->numberBetween(5, 20),
-                'current_stock' => $faker->numberBetween(0, 50),
+                'description' => 'Random product description for testing',
+                'purchase_price' => rand(500000, 15000000),
+                'selling_price' => rand(750000, 20000000),
+                'min_stock' => rand(5, 20),
+                'current_stock' => rand(0, 50),
                 'unit' => 'pcs',
-                'rack_location' => $faker->bothify('?-##'),
-                'image_path' => $faker->imageUrl(640, 480, 'electronics', true, $name),
+                'rack_location' => chr(rand(65, 74)) . '-' . rand(1, 10),
+                'image_path' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];

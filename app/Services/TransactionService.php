@@ -20,30 +20,63 @@ class TransactionService
 
     // ====================== CRUD METHODS ======================
     
-    public function createTransaction(array $data, string $type): Transaction
+    public function createTransaction(array $data, string $type, User $user): Transaction
     {
-        \Log::info('TransactionService - Create transaction', [
-            'type' => $type,
-            'user_id' => auth()->id()
-        ]);
-        
+
         DB::beginTransaction();
 
         try {
-            $transaction = Transaction::create([
+            // Prepare transaction data
+            $transactionData = [
                 'transaction_number' => $this->generateTransactionNumber($type),
                 'type' => strtolower($type),
                 'status' => 'pending',
                 'total_amount' => $this->calculateTotal($data['items']),
                 'date' => $data['date'] ?? now()->toDateString(),
                 'notes' => $data['notes'] ?? null,
-                'supplier_id' => $type === 'incoming' ? ($data['supplier_id'] ?? null) : null,
-                'customer_name' => $type === 'outgoing' ? ($data['customer_name'] ?? null) : null,
-                'created_by' => auth()->id(),
-            ]);
-
+                'created_by' => $user->id,
+                // NEW: Add restock_order_id if present
+                'restock_order_id' => $data['restock_order_id'] ?? null,
+            ];
+            
+            // Set type-specific fields
+            if ($type === 'incoming') {
+                $transactionData['supplier_id'] = $data['supplier_id'] ?? null;
+                
+                // Auto-fill supplier jika ada restock_order_id
+                if (!empty($data['restock_order_id']) && empty($transactionData['supplier_id'])) {
+                    $restockOrder = RestockOrder::find($data['restock_order_id']);
+                    if ($restockOrder) {
+                        $transactionData['supplier_id'] = $restockOrder->supplier_id;
+                    }
+                }
+                
+                // Set restock_status
+                $transactionData['restock_status'] = !empty($data['restock_order_id']) 
+                    ? 'pending_receipt' 
+                    : 'not_restock';
+            } else {
+                $transactionData['customer_name'] = $data['customer_name'] ?? null;
+                $transactionData['restock_status'] = 'not_restock';
+                
+                // Validate stock untuk outgoing
+                foreach ($data['items'] as $item) {
+                    $product = Product::find($item['product_id']);
+                    if ($product && $product->current_stock < $item['quantity']) {
+                        throw new \Exception(
+                            "Insufficient stock for {$product->name}. " .
+                            "Available: {$product->current_stock}"
+                        );
+                    }
+                }
+            }
+            
+            // Create transaction
+            $transaction = Transaction::create($transactionData);
+            
+            // Create transaction items
             $this->createTransactionItems($transaction, $data['items']);
-
+            
             DB::commit();
             return $transaction;
 
@@ -130,12 +163,6 @@ class TransactionService
             StockMovementService::updateFromTransaction($transaction);
             
             DB::commit();
-            
-            \Log::info('Transaction approved', [
-                'transaction_id' => $transaction->id,
-                'approved_by' => $approver->id,
-                'new_status' => $newStatus
-            ]);
             
             return $transaction->fresh();
             
@@ -373,5 +400,45 @@ class TransactionService
             ->where('is_approved', true)
             ->orderBy('name')
             ->get(['id', 'name', 'email', 'phone']);
+    }
+
+    public function getRestockOrdersForReceiving()
+    {
+        return RestockOrder::where('status', 'received')
+            ->whereDoesntHave('transactions') // Belum ada transaction
+            ->with(['supplier:id,name,email'])
+            ->orderBy('expected_delivery_date', 'desc')
+            ->get();
+    }
+
+    public function validateRestockOrderForTransaction($restockOrderId)
+    {
+        $restockOrder = RestockOrder::find($restockOrderId);
+        
+        if (!$restockOrder) {
+            return [
+                'valid' => false,
+                'message' => 'Restock order not found'
+            ];
+        }
+        
+        if ($restockOrder->status !== 'received') {
+            return [
+                'valid' => false,
+                'message' => 'Restock order is not in "Received" status'
+            ];
+        }
+        
+        if ($restockOrder->transactions()->exists()) {
+            return [
+                'valid' => false,
+                'message' => 'Restock order already has a linked transaction'
+            ];
+        }
+        
+        return [
+            'valid' => true,
+            'restock_order' => $restockOrder
+        ];
     }
 }

@@ -30,6 +30,9 @@ use App\Models\StockMovement;
 // PUBLIC ROUTES
 // ============================================================
 
+Route::get('/transactions/restock-orders/{id}/items', 
+    [TransactionController::class, 'getRestockOrderItems']);
+    
 Route::get('/', function () {
     return auth()->check() ? redirect()->route('dashboard') : view('welcome');
 })->name('welcome');
@@ -59,7 +62,8 @@ Route::get('/pending', function () {
     return view('supplier.pending');
 })->name('supplier.pending')->middleware('auth');
 
-
+Route::get('/api/restock-orders/{id}/items', [TransactionController::class, 'getRestockOrderItems'])
+    ->name('api.restock.items');
 // routes/web.php
 Route::post('/test-restock-simple', function(Request $request) {
     \Log::info('Test restock with data:', $request->all());

@@ -5,7 +5,7 @@
 @section('content')
 <div class="flex items-center justify-between mb-4">
     <h1 class="text-2xl font-bold text-gray-900">Create Outgoing Transaction</h1>
-    <a href="{{ route('transactions.index') }}" 
+    <a href="{{ route('transactions.history') }}" 
        class="text-indigo-600 hover:underline text-sm">
         ← Back to Transactions
     </a>

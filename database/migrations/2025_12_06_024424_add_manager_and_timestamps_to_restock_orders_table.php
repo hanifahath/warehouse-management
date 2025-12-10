@@ -10,7 +10,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('restock_orders', function (Blueprint $table) {
-            // ✅ Cek kolom mana yang belum ada
             if (!Schema::hasColumn('restock_orders', 'manager_id')) {
                 $table->unsignedBigInteger('manager_id')->nullable()->after('supplier_id');
             }
