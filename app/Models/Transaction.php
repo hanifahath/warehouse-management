@@ -69,17 +69,13 @@ class Transaction extends Model
     // ============= ATTRIBUTE ACCESSORS =============
     public function getTotalAmountAttribute()
     {
-        // Cek apakah ada nilai langsung di attributes
         $dbValue = $this->attributes['total_amount'] ?? null;
         
-        // Jika ada nilai di DB dan bukan 0/null, gunakan itu
         if (!is_null($dbValue) && $dbValue > 0) {
             return $dbValue;
         }
-        
-        // Coba hitung dari items jika relasi tersedia
+
         if (method_exists($this, 'items')) {
-            // Pastikan relasi sudah diload
             if (!$this->relationLoaded('items')) {
                 $this->load('items');
             }
@@ -89,7 +85,6 @@ class Transaction extends Model
                     return ($item->quantity ?? 0) * ($item->price_at_transaction ?? $item->product->price ?? 0);
                 });
                 
-                // Simpan ke DB untuk next time (optional)
                 if ($calculated > 0 && is_null($dbValue)) {
                     $this->update(['total_amount' => $calculated]);
                 }
@@ -129,7 +124,6 @@ class Transaction extends Model
         return strtolower($this->type) === 'outgoing';
     }
     
-    // Untuk memastikan type selalu lowercase saat disimpan
     public function setTypeAttribute($value)
     {
         $this->attributes['type'] = strtolower($value);

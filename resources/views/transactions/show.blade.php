@@ -9,17 +9,25 @@
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold text-gray-900">Transaction Details</h1>
         <div class="flex gap-3">
-            <a href="{{ route('transactions.history') }}"
-               class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg text-sm">
-                ← Back to List
-            </a>
-            
+            @can('viewAny', App\Models\Transaction::class)
+                {{-- Admin/Manager bisa lihat semua --}}
+                <a href="{{ route('transactions.index') }}"
+                class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg text-sm">
+                    ← Back to All Transactions
+                </a>
+            @else
+                {{-- Staff hanya bisa lihat history sendiri --}}
+                <a href="{{ route('transactions.history') }}"
+                class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg text-sm">
+                    ← Back to My Transactions
+                </a>
             @if($transaction->status === 'pending' && auth()->id() === $transaction->created_by)
                 <a href="{{ route('transactions.edit', $transaction) }}"
                    class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-sm">
                     Edit
                 </a>
             @endif
+            @endcan
         </div>
     </div>
 

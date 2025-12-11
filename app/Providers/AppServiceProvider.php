@@ -7,11 +7,8 @@ use Illuminate\Support\Facades\URL; // Import Facade URL
 use Illuminate\Support\Facades\Schema; // Import Facade Schema (Opsional, tapi sering digunakan)
 use Illuminate\Routing\Router; // Import Router untuk mendaftarkan middleware
 use Illuminate\Database\Eloquent\Relations\Relation;
-// PERBAIKAN 1: Hapus import yang tidak perlu atau perbaiki typo
 use App\Services\TransactionService;
-use App\Services\StockMovementService; // PERBAIKAN 2: Perbaiki typo 'Seervices' menjadi 'Services'
-// use App\Seervices\StockMovementService; // BARIS TYPO ASLI
-
+use App\Services\StockMovementService; 
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -19,10 +16,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        // PERBAIKAN 3: Menyuntikkan StockMovementService ke TransactionService
         $this->app->singleton(TransactionService::class, function ($app) {
-            // Kita secara eksplisit memberitahu Laravel untuk membuat (make) instance StockMovementService
-            // dan meneruskannya sebagai argumen.
             return new TransactionService(
                 $app->make(StockMovementService::class)
             );

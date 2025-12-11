@@ -9,9 +9,6 @@ use Illuminate\Support\Facades\DB;
 
 class StockMovementService
 {
-    /**
-     * Update stock from approved transaction
-     */
     public static function updateFromTransaction(Transaction $transaction): bool
     {
         return DB::transaction(function () use ($transaction) {
@@ -20,11 +17,9 @@ class StockMovementService
                 $beforeQty = $product->current_stock;
                 
                 if ($transaction->isIncoming()) {
-                    // Incoming: add stock (positive change)
                     $product->increment('current_stock', $item->quantity);
                     $change = $item->quantity;
                 } else {
-                    // Outgoing: subtract stock (negative change)
                     $product->decrement('current_stock', $item->quantity);
                     $change = -$item->quantity;
                 }
@@ -46,9 +41,6 @@ class StockMovementService
         });
     }
 
-    /**
-     * Update stock from completed restock order
-     */
     public static function updateFromRestock(RestockOrder $restockOrder): bool
     {
         return DB::transaction(function () use ($restockOrder) {
@@ -56,7 +48,6 @@ class StockMovementService
                 $product = $item->product;
                 $beforeQty = $product->current_stock;
                 
-                // Restock always adds stock
                 $product->increment('current_stock', $item->quantity);
                 
                 StockMovement::create([
@@ -73,10 +64,7 @@ class StockMovementService
             return true;
         });
     }
-    
-    /**
-     * Get stock history for product
-     */
+
     public static function getProductHistory($productId, $limit = 50)
     {
         return StockMovement::where('product_id', $productId)

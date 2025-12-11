@@ -32,7 +32,6 @@ class ProfileController extends Controller
 
         $data = $request->validated();
 
-        // Jika ada password baru, hash terlebih dahulu
         if (!empty($data['password'])) {
             $data['password'] = Hash::make($data['password']);
         } else {

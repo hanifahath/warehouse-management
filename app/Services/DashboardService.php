@@ -10,9 +10,6 @@ use Illuminate\Support\Collection;
 
 class DashboardService
 {
-    /**
-     * Return dashboard data berdasarkan role user.
-     */
     public function getDashboardData($user): array
     {
         $data = [
@@ -49,26 +46,20 @@ class DashboardService
         return $data;
     }
 
-    /** Data untuk Admin */
     private function getAdminData(): array
     {
         return [
             'productsCount' => Product::count(),
             'transactionsCount' => Transaction::whereMonth('date', now()->month)->count(),
-            // PERBAIKAN: Menggunakan 'current_stock'
             'inventoryValue' => Product::sum(DB::raw('current_stock * purchase_price')),
-            // PERBAIKAN: Menggunakan 'current_stock'
             'lowStockProducts' => Product::whereColumn('current_stock', '<', 'min_stock')->get(),
         ];
     }
 
-    /** Data untuk Manager */
     private function getManagerData(): array
     {
         return [
-            // PERBAIKAN: Menggunakan 'current_stock'
             'totalItems' => Product::sum('current_stock'),
-            // PERBAIKAN: Menggunakan 'current_stock'
             'lowStockCount' => Product::whereColumn('current_stock', '<', 'min_stock')->count(),
             'pendingTransactionsCount' => Transaction::where('status', 'Pending')->count(),
             'pendingTransactions' => Transaction::where('status', 'Pending')->get(),
@@ -76,7 +67,6 @@ class DashboardService
         ];
     }
 
-    /** Data untuk Staff */
     private function getStaffData(): array
     {
         return [
@@ -84,7 +74,6 @@ class DashboardService
         ];
     }
 
-    /** Data untuk Supplier */
     private function getSupplierData($user): array
     {
         return [

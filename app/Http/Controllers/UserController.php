@@ -22,20 +22,16 @@ class UserController extends Controller
 
     public function index(Request $request)
     {
-        // Gunakan Policy untuk authorization
         $this->authorize('viewAny', User::class);
         
-        // Get filters from request
         $filters = [
             'search' => $request->input('search'),
             'role' => $request->input('role'),
             'status' => $request->input('status'),
         ];
         
-        // Get filtered users
         $users = $this->service->getFilteredUsers($filters);
         
-        // Get counts for tabs
         $counts = $this->service->getUserCounts();
         
         $unapprovedSuppliersCount = $counts['pending'];

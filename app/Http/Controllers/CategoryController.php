@@ -25,7 +25,6 @@ class CategoryController extends Controller
         try {
             $this->authorize('viewAny', Category::class);
             
-            // Pakai method baru yang menerima Request object
             $categories = $this->categoryService->getFilteredCategories($request);
             
             return view('categories.index', compact('categories'));
@@ -41,14 +40,12 @@ class CategoryController extends Controller
 
     public function create(): View
     {
-        $this->authorize('create', Category::class);
         return view('categories.create');
     }
 
     public function store(CategoryStoreRequest $request): RedirectResponse
     {
-        $this->authorize('create', Category::class);
-
+        
         try {
             $this->categoryService->create($request->validated());
             return redirect()->route('categories.index')
@@ -62,22 +59,17 @@ class CategoryController extends Controller
     {
         $this->authorize('view', $category);
         
-        // Eager load products with count
         $category->load(['products' => function($query) {
             $query->orderBy('name')->take(10);
         }]);
-        
-        // Products count will be available via relationship
-        // Image URL sudah ada di accessor
-
+    
         return view('categories.show', compact('category'));
     }
 
     public function edit(Category $category): View
     {
         $this->authorize('update', $category);
-        
-        // Get image URL if exists
+
         $category->image_url = $this->categoryService->getImageUrl($category->image_path);
 
         return view('categories.edit', compact('category'));

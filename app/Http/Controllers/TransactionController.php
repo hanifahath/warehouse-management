@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Transaction;
 use App\Models\User;
-Use App\Models\RestockOrder;
+use App\Models\RestockOrder;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use App\Http\Requests\{
@@ -24,8 +24,6 @@ class TransactionController extends Controller
         $this->middleware('auth');
     }
 
-    // ====================== CRUD ACTIONS ======================
-    
     public function index(Request $request)
     {
         $this->authorize('viewAny', Transaction::class);
@@ -160,8 +158,6 @@ class TransactionController extends Controller
         }
     }
 
-    // ====================== APPROVAL ACTIONS ======================
-    
     public function approve(TransactionApproveRequest $request, Transaction $transaction)
     {
         $this->authorize('approve', $transaction);
@@ -198,8 +194,6 @@ class TransactionController extends Controller
         }
     }
 
-    // ====================== STATUS ACTIONS ======================
-    
     public function ship(Request $request, Transaction $transaction)
     {
         $this->authorize('updateStock', $transaction);
@@ -228,8 +222,6 @@ class TransactionController extends Controller
         }
     }
 
-    // ====================== VIEW ACTIONS ======================
-    
     public function pendingApprovals(Request $request)
     {
         $this->authorize('viewPendingApprovals', Transaction::class);
@@ -258,12 +250,9 @@ class TransactionController extends Controller
         return view('transactions.history', compact('transactions'));
     }
 
-    // ====================== HELPER METHODS ======================
-    
     private function handleTransactionCreation(array $data, string $type)
     {
         try {
-            // Delegate ke service
             $transaction = $this->transactionService->createTransaction($data, $type, auth()->user());
             
             return redirect()->route('transactions.show', $transaction)

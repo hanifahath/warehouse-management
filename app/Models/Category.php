@@ -16,16 +16,13 @@ class Category extends Model
         'image_path',
     ];
 
-    protected $appends = ['image_url']; // Tambahkan ini
+    protected $appends = ['image_url']; 
 
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);
     }
 
-    /**
-     * Get image URL
-     */
     public function getImageUrlAttribute(): ?string
     {
         if (!$this->image_path) {
@@ -35,12 +32,9 @@ class Category extends Model
         return \Storage::url($this->image_path);
     }
 
-    /**
-     * Get products count attribute
-     */
+
     public function getProductsCountAttribute(): int
     {
-        // Use loaded count if available, otherwise query
         if (array_key_exists('products_count', $this->attributes)) {
             return $this->attributes['products_count'];
         }

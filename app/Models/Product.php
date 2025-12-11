@@ -19,14 +19,14 @@ class Product extends Model
         'purchase_price', 
         'selling_price', 
         'min_stock', 
-        'current_stock', // ✅ PASTIKAN ini bukan 'stock'
+        'current_stock', 
         'unit', 
         'rack_location', 
         'image_path',
     ];
 
     protected $casts = [
-        'current_stock' => 'integer', // ✅ PASTIKAN ini
+        'current_stock' => 'integer', 
         'min_stock' => 'integer',
         'purchase_price' => 'decimal:2',
         'selling_price' => 'decimal:2',
@@ -84,11 +84,6 @@ class Product extends Model
         return $this->current_stock * $this->purchase_price;
     }
 
-    /**
-     * Convenience accessor used by views: returns the stored image path.
-     * Views call `asset('storage/' . $product->image_url)`, so this
-     * should return the relative path (e.g. "products/abc.jpg").
-     */
     public function getImageUrlAttribute(): ?string
     {
         return $this->image_path ?: null;

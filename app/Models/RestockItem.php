@@ -20,27 +20,25 @@ class RestockItem extends Model
         'quantity' => 'integer',
     ];
 
-    /**
-     * ✅ Relationship: Restock Order parent
-     */
+    protected $appends = ['unit_price', 'subtotal'];
+
     public function restockOrder(): BelongsTo
     {
         return $this->belongsTo(RestockOrder::class);
     }
 
-    /**
-     * ✅ Relationship: Product
-     */
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
     }
 
-    /**
-     * ✅ Calculate subtotal (quantity * cost_price)
-     */
+    public function getUnitPriceAttribute(): float
+    {
+        return $this->product->purchase_price ?? 0;
+    }
+
     public function getSubtotalAttribute(): float
     {
-        return $this->quantity * ($this->product->cost_price ?? 0);
+        return $this->quantity * $this->unit_price;
     }
 }

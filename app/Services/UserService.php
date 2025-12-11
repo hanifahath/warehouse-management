@@ -23,13 +23,10 @@ class UserService
         ]);
     }
 
-    // app/Services/UserService.php
-
     public function updateUser(User $user, array $data): User
     {
         $currentUser = auth()->user();
         
-        // Check role change safety
         if (isset($data['role']) && !$user->canChangeRole($data['role'], $currentUser)) {
             if ($user->id === $currentUser->id) {
                 throw new \Exception('You cannot change your own role from admin.');
@@ -38,7 +35,6 @@ class UserService
             }
         }
         
-        // Handle is_approved untuk non-supplier
         if ($user->role !== 'supplier') {
             $data['is_approved'] = $user->is_approved;
         }
@@ -50,8 +46,7 @@ class UserService
     public function deleteUser(User $user): void
     {
         $currentUser = auth()->user();
-        
-        // Check delete safety
+
         if (!$user->canBeDeleted($currentUser)) {
             if ($user->id === $currentUser->id) {
                 throw new \Exception('You cannot delete your own account.');
@@ -69,14 +64,10 @@ class UserService
         return $user;
     }
 
-    /**
-     * Get filtered and paginated users
-     */
     public function getFilteredUsers(array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
         $query = User::query();
 
-        // Search by name or email
         if (!empty($filters['search'])) {
             $search = $filters['search'];
             $query->where(function($q) use ($search) {
@@ -85,12 +76,10 @@ class UserService
             });
         }
 
-        // Filter by role
         if (!empty($filters['role'])) {
             $query->where('role', $filters['role']);
         }
 
-        // Filter by status
         if (!empty($filters['status'])) {
             switch ($filters['status']) {
                 case 'pending':
@@ -105,16 +94,11 @@ class UserService
             }
         }
 
-        // Default sorting by name
         $query->orderBy('name');
 
-        // Apply pagination
         return $query->paginate($perPage);
     }
 
-    /**
-     * Get counts for each status tab
-     */
     public function getUserCounts(): array
     {
         return [

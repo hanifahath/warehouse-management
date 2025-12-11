@@ -34,7 +34,6 @@ class DashboardController extends Controller
 
     private function adminDashboard()
     {
-        // STATISTIK UTAMA
         $stats = [
             'total_products' => Product::count(),
             'monthly_transactions' => Transaction::whereMonth('created_at', now()->month)
@@ -43,24 +42,21 @@ class DashboardController extends Controller
             'inventory_value' => Product::sum(DB::raw('current_stock * purchase_price')),
             'total_users' => User::count(),
             'pending_suppliers' => User::where('role', 'supplier')
-                ->where('status', 'pending') // asumsi ada kolom status
+                ->where('status', 'inactive') 
                 ->count(),
         ];
 
-        // LOW STOCK ALERTS (top 5)
         $lowStock = Product::with('category')
             ->whereRaw('current_stock <= min_stock')
             ->orderBy('current_stock', 'asc')
             ->limit(5)
             ->get();
 
-        // RECENT ACTIVITIES (5 terbaru)
         $recentActivities = Transaction::with(['creator', 'items'])
             ->latest()
             ->limit(5)
             ->get();
 
-        // PENDING SUPPLIERS
         $pendingSuppliers = User::where('role', 'supplier')
             ->where('status', 'pending')
             ->latest()
@@ -77,7 +73,6 @@ class DashboardController extends Controller
 
     private function managerDashboard()
     {
-        // STATISTIK UTAMA
         $stats = [
             'total_items' => Product::count(),
             'total_products' => Product::count(),
@@ -90,35 +85,30 @@ class DashboardController extends Controller
                 ->count(),
         ];
 
-        // LOW STOCK ALERTS (top 5)
         $lowStock = Product::with('category')
             ->whereRaw('current_stock <= min_stock')
             ->orderBy('current_stock', 'asc')
             ->limit(5)
             ->get();
 
-        // PENDING TRANSACTIONS untuk approval - HANYA 3 SAJA
         $pending = Transaction::with(['items.product', 'creator'])
             ->where('status', 'Pending')
             ->latest()
             ->limit(3)
             ->get();
 
-        // ACTIVE RESTOCK ORDERS (3 terbaru)
         $restocks = RestockOrder::with('supplier')
             ->whereIn('status', ['pending', 'confirmed', 'in_transit'])
             ->latest()
             ->limit(3)
             ->get();
 
-        // TOP 5 PRODUCTS BY STOCK VALUE
         $topProducts = Product::select('id', 'name', 'sku', 'current_stock', 'purchase_price')
             ->selectRaw('current_stock * purchase_price as stock_value')
             ->orderBy('stock_value', 'desc')
             ->limit(5)
             ->get();
 
-        // CATEGORY DISTRIBUTION
         $categories = Category::withCount('products')
             ->orderBy('products_count', 'desc')
             ->limit(5)
@@ -138,7 +128,6 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
         
-        // STATISTIK
         $stats = [
             'today_transactions' => Transaction::where('created_by', $user->id)
                 ->whereDate('created_at', today())
@@ -152,7 +141,6 @@ class DashboardController extends Controller
                 ->count(),
         ];
 
-        // TODAY'S TRANSACTIONS (buatan staff sendiri)
         $todayTransactions = Transaction::with(['items.product', 'supplier'])
             ->where('created_by', $user->id)
             ->whereDate('created_at', today())
@@ -160,7 +148,6 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
-        // LOW STOCK PRODUCTS (untuk info)
         $lowStockInfo = Product::whereRaw('current_stock <= min_stock')
             ->orderBy('current_stock', 'asc')
             ->limit(5)
@@ -176,36 +163,33 @@ class DashboardController extends Controller
     private function supplierDashboard()
     {
         $user = auth()->user();
-        
-        // STATISTIK
+
         $stats = [
             'pending_orders' => RestockOrder::where('supplier_id', $user->id)
-                ->where('status', 'pending')
+                ->where('status', 'Pending')
                 ->count(),
             'confirmed_orders' => RestockOrder::where('supplier_id', $user->id)
-                ->where('status', 'confirmed')
+                ->where('status', 'Confirmed')
                 ->count(),
             'in_transit_orders' => RestockOrder::where('supplier_id', $user->id)
-                ->where('status', 'in_transit')
+                ->where('status', 'In Transit')
                 ->count(),
             'delivered_this_month' => RestockOrder::where('supplier_id', $user->id)
-                ->where('status', 'received')
+                ->where('status', 'Received')
                 ->whereMonth('updated_at', now()->month)
                 ->count(),
         ];
 
-        // PENDING ORDERS (perlu konfirmasi)
         $pendingOrders = RestockOrder::with(['items.product'])
             ->where('supplier_id', $user->id)
-            ->where('status', 'pending')
+            ->where('status', 'Pending')
             ->latest()
             ->limit(5)
             ->get();
 
-        // DELIVERY HISTORY (5 terbaru)
         $deliveryHistory = RestockOrder::with(['items.product'])
             ->where('supplier_id', $user->id)
-            ->whereIn('status', ['in_transit', 'received'])
+            ->whereIn('status', ['In Transit', 'Received'])
             ->latest()
             ->limit(5)
             ->get();
@@ -214,6 +198,6 @@ class DashboardController extends Controller
             'stats',
             'pendingOrders',
             'deliveryHistory'
-        ));
+        ))->with('role', 'supplier');
     }
 }

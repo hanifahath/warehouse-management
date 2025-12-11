@@ -18,7 +18,6 @@ class ProductController extends Controller
 
     public function __construct(ProductService $productService)
     {
-        // Fix constructor dependency injection
         $this->productService = $productService;
         $this->middleware('auth');
     }
@@ -29,8 +28,16 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         $this->authorize('viewAny', Product::class);
-
         $categories = Category::orderBy('name')->get();
+
+        if ($request->has('low_stock')) {
+            $products = Product::with('category')
+                ->whereColumn('current_stock', '<=', 'min_stock')                    
+                ->orderByRaw('(min_stock - current_stock) DESC')   
+                ->paginate(10);
+            return view('products.index', compact('products', 'categories'));
+        }
+
         $products = $this->productService->getFilteredProducts($request);
 
         return view('products.index', compact('products', 'categories'));
@@ -77,36 +84,31 @@ class ProductController extends Controller
     {
         $this->authorize('view', $product);
         
-        // Load category (supplier tidak ada di product model)
         $product->load(['category']);
         
-        // Get recent transactions untuk product ini
         $user = auth()->user();
         $query = Transaction::whereHas('items', function($q) use ($product) {
             $q->where('product_id', $product->id);
         });
-        
-        // Filter berdasarkan role - SESUAIKAN DENGAN MODEL
+
         if ($user->isStaff()) {
-            $query->where('created_by', $user->id); // ✅ BENAR: pakai created_by
+            $query->where('created_by', $user->id); 
         }
         
         if ($user->isSupplier()) {
-            $query->where('supplier_id', $user->id); // ✅ BENAR
+            $query->where('supplier_id', $user->id); 
         }
-        
-        // Load dengan relationship yang benar dari model
+    
         $recent_transactions = $query->with([
-            'creator',  // ✅ GANTI 'user' dengan 'creator' (sesuai model)
+            'creator',  
             'items',
-            'supplier', // Optional: jika perlu
-            'approver'  // Optional: jika perlu
+            'supplier', 
+            'approver'  
         ])
         ->latest()
         ->limit(5)
         ->get();
         
-        // Get stats (pastikan method ini ada)
         $stats = $this->productService->calculateProductStats($product);
         
         return view('products.show', compact('product', 'stats', 'recent_transactions'));

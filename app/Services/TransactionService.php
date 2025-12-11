@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Transaction;
 use App\Models\Product;
 use App\Models\User;
+use App\Models\RestockOrder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -18,15 +19,11 @@ class TransactionService
         $this->stockMovementService = $stockMovementService;
     }
 
-    // ====================== CRUD METHODS ======================
-    
     public function createTransaction(array $data, string $type, User $user): Transaction
     {
-
         DB::beginTransaction();
 
         try {
-            // Prepare transaction data
             $transactionData = [
                 'transaction_number' => $this->generateTransactionNumber($type),
                 'type' => strtolower($type),
@@ -35,15 +32,12 @@ class TransactionService
                 'date' => $data['date'] ?? now()->toDateString(),
                 'notes' => $data['notes'] ?? null,
                 'created_by' => $user->id,
-                // NEW: Add restock_order_id if present
                 'restock_order_id' => $data['restock_order_id'] ?? null,
             ];
             
-            // Set type-specific fields
             if ($type === 'incoming') {
                 $transactionData['supplier_id'] = $data['supplier_id'] ?? null;
                 
-                // Auto-fill supplier jika ada restock_order_id
                 if (!empty($data['restock_order_id']) && empty($transactionData['supplier_id'])) {
                     $restockOrder = RestockOrder::find($data['restock_order_id']);
                     if ($restockOrder) {
@@ -51,7 +45,6 @@ class TransactionService
                     }
                 }
                 
-                // Set restock_status
                 $transactionData['restock_status'] = !empty($data['restock_order_id']) 
                     ? 'pending_receipt' 
                     : 'not_restock';
@@ -59,7 +52,6 @@ class TransactionService
                 $transactionData['customer_name'] = $data['customer_name'] ?? null;
                 $transactionData['restock_status'] = 'not_restock';
                 
-                // Validate stock untuk outgoing
                 foreach ($data['items'] as $item) {
                     $product = Product::find($item['product_id']);
                     if ($product && $product->current_stock < $item['quantity']) {
@@ -71,10 +63,8 @@ class TransactionService
                 }
             }
             
-            // Create transaction
             $transaction = Transaction::create($transactionData);
             
-            // Create transaction items
             $this->createTransactionItems($transaction, $data['items']);
             
             DB::commit();
@@ -139,8 +129,6 @@ class TransactionService
         }
     }
 
-    // ====================== APPROVAL METHODS ======================
-    
     public function approveTransaction(Transaction $transaction, User $approver, ?string $notes = null): Transaction
     {
         if (!$transaction->isPending()) {
@@ -159,7 +147,6 @@ class TransactionService
                 'notes' => $notes ? ($transaction->notes . "\n\nDisetujui: " . $notes) : $transaction->notes,
             ]);
             
-            // Gunakan static method yang benar
             StockMovementService::updateFromTransaction($transaction);
             
             DB::commit();
@@ -197,8 +184,6 @@ class TransactionService
         }
     }
 
-    // ====================== STATUS UPDATE METHODS ======================
-    
     public function markAsShipped(Transaction $transaction, User $user): Transaction
     {
         if (!$transaction->isOutgoing()) {
@@ -227,8 +212,6 @@ class TransactionService
         return $transaction->fresh();
     }
 
-    // ====================== QUERY METHODS ======================
-    
     public function getPendingApprovals(User $user, $urgent = false, $perPage = 10)
     {
         if (!$user->isManager() && !$user->isAdmin()) {
@@ -238,12 +221,10 @@ class TransactionService
         $query = Transaction::with(['creator', 'items.product', 'supplier'])
             ->where('status', 'Pending');
         
-        // Filter urgent jika true
         if ($urgent) {
             $query->where('is_urgent', true);
         }
         
-        // Gunakan paginate dengan parameter $perPage
         return $query->latest()->paginate($perPage);
     }
 
@@ -261,21 +242,6 @@ class TransactionService
         return $query->latest()->paginate($request->per_page ?? 20);
     }
 
-    public function getSupplierTransactions(User $user, Request $request)
-    {
-        if (!$user->isSupplier()) {
-            return collect();
-        }
-        
-        $query = Transaction::with(['items.product', 'creator'])
-            ->where('type', 'incoming')
-            ->where('supplier_id', $user->id);
-        
-        $this->applyCommonFilters($query, $request);
-        
-        return $query->latest()->paginate($request->per_page ?? 20);
-    }
-
     public function getFilteredTransactions(Request $request, User $user)
     {
         $query = Transaction::with(['items.product', 'creator', 'supplier', 'approver']);
@@ -286,8 +252,6 @@ class TransactionService
         return $query->latest()->paginate($request->per_page ?? 20);
     }
 
-    // ====================== HELPER METHODS ======================
-    
     private function createTransactionItems(Transaction $transaction, array $items): void
     {
         foreach ($items as $item) {
@@ -326,7 +290,6 @@ class TransactionService
                 break;
             case 'manager':
             case 'admin':
-                // Bisa melihat semua
                 break;
             default:
                 $query->where('created_by', $user->id);
@@ -386,8 +349,6 @@ class TransactionService
         });
     }
 
-    // ====================== UTILITY METHODS ======================
-    
     public function getAvailableProducts()
     {
         return Product::orderBy('name')
@@ -400,45 +361,5 @@ class TransactionService
             ->where('is_approved', true)
             ->orderBy('name')
             ->get(['id', 'name', 'email', 'phone']);
-    }
-
-    public function getRestockOrdersForReceiving()
-    {
-        return RestockOrder::where('status', 'received')
-            ->whereDoesntHave('transactions') // Belum ada transaction
-            ->with(['supplier:id,name,email'])
-            ->orderBy('expected_delivery_date', 'desc')
-            ->get();
-    }
-
-    public function validateRestockOrderForTransaction($restockOrderId)
-    {
-        $restockOrder = RestockOrder::find($restockOrderId);
-        
-        if (!$restockOrder) {
-            return [
-                'valid' => false,
-                'message' => 'Restock order not found'
-            ];
-        }
-        
-        if ($restockOrder->status !== 'received') {
-            return [
-                'valid' => false,
-                'message' => 'Restock order is not in "Received" status'
-            ];
-        }
-        
-        if ($restockOrder->transactions()->exists()) {
-            return [
-                'valid' => false,
-                'message' => 'Restock order already has a linked transaction'
-            ];
-        }
-        
-        return [
-            'valid' => true,
-            'restock_order' => $restockOrder
-        ];
     }
 }

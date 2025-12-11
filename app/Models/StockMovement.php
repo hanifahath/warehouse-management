@@ -8,20 +8,16 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class StockMovement extends Model
 {
-    // ============= DATABASE STRUCTURE =============
-    // Kolom database yang ada:
-    // id, product_id, change, source_type, source_id, before_qty, after_qty, performed_by, created_at, updated_at
-    
     protected $table = 'stock_movements';
     
     protected $fillable = [
         'product_id',
-        'change',           // integer (+ untuk masuk, - untuk keluar)
-        'source_type',      // string (contoh: "restock", "transaction")
-        'source_id',        // integer (ID dari source)
-        'before_qty',       // integer (stok sebelum)
-        'after_qty',        // integer (stok setelah)
-        'performed_by',     // integer (user_id)
+        'change',          
+        'source_type',      
+        'source_id',        
+        'before_qty',       
+        'after_qty',        
+        'performed_by',    
     ];
 
     protected $casts = [
@@ -31,18 +27,17 @@ class StockMovement extends Model
     ];
 
     protected $appends = [
-        'type',              // 'in' atau 'out' (dihitung dari change)
-        'quantity',          // nilai absolut dari change
-        'type_label',        // 'Stock In' atau 'Stock Out'
-        'change_direction',  // 'increase' atau 'decrease'
-        'is_increase',       // boolean
-        'is_decrease',       // boolean
-        'quantity_change',   // '+20' atau '-5'
-        'reference_type',    // alias untuk source_type (untuk kompatibilitas)
-        'reference_id',      // alias untuk source_id
-        'before_quantity',   // alias untuk before_qty
-        'after_quantity',    // alias untuk after_qty
-        'user_id',           // alias untuk performed_by
+        'type',              
+        'quantity',          
+        'type_label',       
+        'change_direction',  
+        'is_decrease',       
+        'quantity_change',   
+        'reference_type',    
+        'reference_id',      
+        'before_quantity',   
+        'after_quantity',    
+        'user_id',           
     ];
 
     // ============= RELATIONS =============
@@ -69,8 +64,6 @@ class StockMovement extends Model
     // ============= ATTRIBUTE ACCESSORS =============
     public function getTypeAttribute(): string
     {
-        // Data ada masalah: change = 0, tapi from 15 to 35
-        // Kita hitung dari before_qty dan after_qty jika change = 0
         if ($this->change == 0) {
             return $this->after_qty >= $this->before_qty ? 'in' : 'out';
         }
@@ -80,7 +73,6 @@ class StockMovement extends Model
 
     public function getQuantityAttribute(): int
     {
-        // Jika change = 0, hitung dari selisih before/after
         if ($this->change == 0) {
             return abs($this->after_qty - $this->before_qty);
         }
@@ -173,17 +165,16 @@ class StockMovement extends Model
     // ============= HELPER METHODS =============
     public static function log(
         Product $product,
-        string $type, // 'in' or 'out'
+        string $type, 
         int $quantity,
         ?Model $reference = null,
         ?User $user = null
     ): StockMovement {
-        // Calculate change: positive for in, negative for out
         $change = $type === 'in' ? $quantity : -$quantity;
         
         return self::create([
             'product_id' => $product->id,
-            'change' => $change, // stored as change in database
+            'change' => $change, 
             'source_type' => $reference ? get_class($reference) : null,
             'source_id' => $reference ? $reference->id : null,
             'before_qty' => $product->current_stock,
@@ -197,7 +188,6 @@ class StockMovement extends Model
     // ============= SCOPES =============
     public function scopeIn($query)
     {
-        // Karena data mungkin salah (change = 0), kita gunakan logika yang sama
         return $query->where(function($q) {
             $q->where('change', '>', 0)
               ->orWhere(function($q2) {
@@ -239,10 +229,6 @@ class StockMovement extends Model
             ->whereYear('created_at', now()->year);
     }
 
-    // ============= FIX DATA YANG SALAH =============
-    /**
-     * Fix incorrect data where change = 0 but quantities changed
-     */
     public static function fixIncorrectData(): void
     {
         $incorrect = self::where('change', 0)
@@ -255,9 +241,6 @@ class StockMovement extends Model
         }
     }
     
-    /**
-     * Get reference info for display
-     */
     public function getReferenceInfoAttribute(): ?string
     {
         if (!$this->reference) {

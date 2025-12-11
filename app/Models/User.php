@@ -74,10 +74,6 @@ class User extends Authenticatable
     }
 
     // ============= ROLE HELPERS (FOR POLICY) =============
-    
-    /**
-     * Check if user has specific role (generic method)
-     */
     public function hasRole(string $role): bool
     {
         return strtolower(trim($this->role ?? '')) === strtolower(trim($role));
@@ -252,25 +248,16 @@ class User extends Authenticatable
         ];
     }
 
-    // app/Models/User.php
-
-    /**
-     * Check if changing this user's role is safe
-     */
     public function canChangeRole(string $newRole, User $currentUser): bool
     {
-        // Jika user sedang mengedit diri sendiri
         if ($this->id === $currentUser->id) {
-            return $newRole === 'admin'; // Hanya boleh tetap admin
+            return $newRole === 'admin'; 
         }
         
-        // Jika user adalah admin
         if ($this->isAdmin()) {
             $adminCount = self::where('role', 'admin')->count();
             
-            // Jika akan diubah jadi non-admin
             if ($newRole !== 'admin') {
-                // Minimal harus ada 2 admin sebelum ubah satu admin
                 if ($adminCount <= 2) {
                     return false;
                 }
@@ -280,20 +267,15 @@ class User extends Authenticatable
         return true;
     }
 
-    /**
-     * Check if deleting this user is safe
-     */
     public function canBeDeleted(User $currentUser): bool
     {
-        // Tidak bisa delete diri sendiri
         if ($this->id === $currentUser->id) {
             return false;
         }
-        
-        // Jika user adalah admin
+ 
         if ($this->isAdmin()) {
             $adminCount = self::where('role', 'admin')->count();
-            return $adminCount > 1; // Minimal harus ada 1 admin tersisa
+            return $adminCount > 1; 
         }
         
         return true;

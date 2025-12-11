@@ -2,17 +2,28 @@
 
 @section('title', $category->name . ' - Category Details')
 
+@push('styles')
+<style>
+    /* Styling for different stock levels for better visibility */
+    .stock-out { color: #dc2626; } /* text-red-600 */
+    .stock-low { color: #d97706; } /* text-yellow-600 */
+    .stock-in { color: #10b981; } /* text-green-600 */
+
+    .tag-out-of-stock { background-color: #fef2f2; color: #b91c1c; } /* bg-red-100 text-red-800 */
+    .tag-low-stock { background-color: #fffbeb; color: #92400e; } /* bg-yellow-100 text-yellow-800 */
+    .tag-in-stock { background-color: #ecfdf5; color: #065f46; } /* bg-green-100 text-green-800 */
+</style>
+@endpush
+
 @section('content')
 <div class="container mx-auto px-4 py-6">
-    {{-- HEADER --}}
     <div class="flex justify-between items-center mb-6">
         <div>
             <h1 class="text-2xl font-bold text-gray-900">Category Details</h1>
             <p class="text-gray-600 mt-1">View and manage category information</p>
         </div>
-        
+
         <div class="flex items-center space-x-3">
-            {{-- BACK BUTTON - Available for all --}}
             <a href="{{ route('categories.index') }}"
                class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -20,8 +31,7 @@
                 </svg>
                 Back to Categories
             </a>
-            
-            {{-- EDIT BUTTON - Hanya Admin & Manager --}}
+
             @can('update', $category)
                 <a href="{{ route('categories.edit', $category) }}"
                    class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
@@ -34,7 +44,6 @@
         </div>
     </div>
 
-    {{-- ALERT MESSAGES --}}
     @if(session('success'))
         <div class="mb-6 bg-green-50 border-l-4 border-green-500 p-4">
             <div class="flex">
@@ -66,17 +75,14 @@
     @endif
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {{-- LEFT COLUMN: Category Details --}}
         <div class="lg:col-span-2">
-            {{-- MAIN INFO CARD --}}
             <div class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden mb-6">
                 <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
                     <h2 class="text-lg font-semibold text-gray-900">Category Information</h2>
                 </div>
-                
+
                 <div class="p-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {{-- Basic Info --}}
                         <div class="space-y-4">
                             <div>
                                 <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">
@@ -87,7 +93,7 @@
                                         <dt class="text-sm font-medium text-gray-500">Category Name</dt>
                                         <dd class="mt-1 text-lg font-semibold text-gray-900">{{ $category->name }}</dd>
                                     </div>
-                                    
+
                                     <div>
                                         <dt class="text-sm font-medium text-gray-500">Description</dt>
                                         <dd class="mt-1 text-gray-900">
@@ -98,7 +104,7 @@
                                             @endif
                                         </dd>
                                     </div>
-                                    
+
                                     <div>
                                         <dt class="text-sm font-medium text-gray-500">Category ID</dt>
                                         <dd class="mt-1 font-mono text-sm text-gray-900">{{ $category->id }}</dd>
@@ -107,7 +113,6 @@
                             </div>
                         </div>
 
-                        {{-- Timestamps & Stats --}}
                         <div class="space-y-4">
                             <div>
                                 <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">
@@ -120,7 +125,7 @@
                                             {{ $category->products_count ?? $category->products()->count() }}
                                         </dd>
                                     </div>
-                                    
+
                                     <div>
                                         <dt class="text-sm font-medium text-gray-500">Created Date</dt>
                                         <dd class="mt-1 text-gray-900">
@@ -128,7 +133,7 @@
                                             <span class="text-sm text-gray-500">({{ $category->created_at->diffForHumans() }})</span>
                                         </dd>
                                     </div>
-                                    
+
                                     <div>
                                         <dt class="text-sm font-medium text-gray-500">Last Updated</dt>
                                         <dd class="mt-1 text-gray-900">
@@ -143,7 +148,6 @@
                 </div>
             </div>
 
-            {{-- PRODUCTS IN THIS CATEGORY --}}
             <div class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
                     <h2 class="text-lg font-semibold text-gray-900">Products in This Category</h2>
@@ -151,7 +155,7 @@
                         {{ $category->products_count ?? $category->products()->count() }} {{ Str::plural('product', $category->products_count ?? $category->products()->count()) }}
                     </span>
                 </div>
-                
+
                 <div class="p-6">
                     @if(($category->products_count ?? $category->products()->count()) > 0)
                         <div class="overflow-x-auto">
@@ -192,25 +196,22 @@
                                             @endif
                                         </td>
                                         <td class="px-3 py-3 whitespace-nowrap">
-                                            <span class="font-medium {{ 
-                                                $product->current_stock == 0 ? 'text-red-600' : 
-                                                ($product->current_stock <= $product->min_stock ? 'text-yellow-600' : 'text-green-600') 
-                                            }}">
+                                            <span class="font-medium @if($product->current_stock == 0) stock-out @elseif($product->current_stock <= $product->min_stock) stock-low @else stock-in @endif">
                                                 {{ $product->current_stock }}
                                             </span>
                                             <span class="text-xs text-gray-500">{{ $product->unit }}</span>
                                         </td>
                                         <td class="px-3 py-3 whitespace-nowrap">
                                             @if($product->current_stock == 0)
-                                                <span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">
+                                                <span class="px-2 py-1 text-xs font-medium rounded-full tag-out-of-stock">
                                                     Out of Stock
                                                 </span>
                                             @elseif($product->current_stock <= $product->min_stock)
-                                                <span class="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
+                                                <span class="px-2 py-1 text-xs font-medium rounded-full tag-low-stock">
                                                     Low Stock
                                                 </span>
                                             @else
-                                                <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                                                <span class="px-2 py-1 text-xs font-medium rounded-full tag-in-stock">
                                                     In Stock
                                                 </span>
                                             @endif
@@ -220,7 +221,7 @@
                                 </tbody>
                             </table>
                         </div>
-                        
+
                         @if(($category->products_count ?? $category->products()->count()) > 10)
                             <div class="mt-4 pt-4 border-t border-gray-200 text-center">
                                 <p class="text-sm text-gray-600">
@@ -243,7 +244,6 @@
                             <h3 class="mt-2 text-sm font-medium text-gray-900">No products found</h3>
                             <p class="mt-1 text-sm text-gray-500">No products have been assigned to this category yet.</p>
                             <div class="mt-6">
-                                {{-- Gunakan @can untuk Add Product button juga --}}
                                 @can('create', App\Models\Product::class)
                                     <a href="{{ route('products.create') }}?category_id={{ $category->id }}"
                                        class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
@@ -254,7 +254,7 @@
                                     </a>
                                 @else
                                     <button disabled
-                                       class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-400 bg-gray-100 cursor-not-allowed">
+                                           class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-400 bg-gray-100 cursor-not-allowed">
                                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                                         </svg>
@@ -269,21 +269,19 @@
             </div>
         </div>
 
-        {{-- RIGHT COLUMN: Image & Actions --}}
         <div>
-            {{-- IMAGE CARD --}}
             <div class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden mb-6">
                 <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
                     <h2 class="text-lg font-semibold text-gray-900">Category Image</h2>
                 </div>
-                
+
                 <div class="p-6">
                     @if($category->image_path)
                         <div class="relative w-full h-64 rounded-lg overflow-hidden border border-gray-300">
-                            <img src="{{ Storage::url($category->image_path) }}" 
+                            <img src="{{ Storage::url($category->image_path) }}"
                                  alt="{{ $category->name }}"
                                  class="w-full h-full object-cover">
-                            <a href="{{ Storage::url($category->image_path) }}" 
+                            <a href="{{ Storage::url($category->image_path) }}"
                                target="_blank"
                                class="absolute top-2 right-2 bg-white text-gray-700 rounded-full p-2 hover:bg-gray-100 focus:outline-none shadow-sm"
                                title="View full size">
@@ -303,7 +301,6 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                             </svg>
                             <p class="mt-2 text-sm text-gray-500">No image uploaded</p>
-                            {{-- Hanya tampilkan link jika bisa edit --}}
                             @can('update', $category)
                                 <a href="{{ route('categories.edit', $category) }}"
                                    class="mt-3 text-sm text-indigo-600 hover:text-indigo-900">
@@ -315,15 +312,13 @@
                 </div>
             </div>
 
-            {{-- QUICK ACTIONS CARD --}}
             <div class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
                     <h2 class="text-lg font-semibold text-gray-900">Quick Actions</h2>
                 </div>
-                
+
                 <div class="p-6">
                     <div class="space-y-3">
-                        {{-- EDIT CATEGORY - Hanya Admin & Manager (sesuai policy update) --}}
                         @can('update', $category)
                             <a href="{{ route('categories.edit', $category) }}"
                                class="w-full flex items-center justify-between px-4 py-3 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
@@ -338,7 +333,6 @@
                                 </svg>
                             </a>
                         @else
-                            {{-- Disabled version untuk unauthorized users --}}
                             <div class="w-full flex items-center justify-between px-4 py-3 border border-gray-300 rounded-md bg-gray-50 opacity-50 cursor-not-allowed">
                                 <div class="flex items-center">
                                     <svg class="h-5 w-5 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -349,8 +343,7 @@
                                 <span class="text-xs text-gray-500 px-2 py-1 bg-gray-200 rounded">Admin/Manager Only</span>
                             </div>
                         @endcan
-                        
-                        {{-- ADD NEW PRODUCT - Sesuai ProductPolicy create() --}}
+
                         @can('create', App\Models\Product::class)
                             <a href="{{ route('products.create') }}?category_id={{ $category->id }}"
                                class="w-full flex items-center justify-between px-4 py-3 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
@@ -377,8 +370,7 @@
                                 </span>
                             </div>
                         @endcan
-                        
-                        {{-- VIEW ALL PRODUCTS - Semua role bisa lihat (sesuai ProductPolicy viewAny) --}}
+
                         @can('viewAny', App\Models\Product::class)
                             <a href="{{ route('products.index', ['category_id' => $category->id]) }}"
                                class="w-full flex items-center justify-between px-4 py-3 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
@@ -403,10 +395,9 @@
                                 <span class="text-xs text-gray-500 px-2 py-1 bg-gray-200 rounded">No Access</span>
                             </div>
                         @endcan
-                        
-                        {{-- DELETE CATEGORY - Hanya Admin & Manager, dan hanya jika tidak ada produk (sesuai policy delete) --}}
+
                         @can('delete', $category)
-                            <form action="{{ route('categories.destroy', $category) }}" method="POST" 
+                            <form action="{{ route('categories.destroy', $category) }}" method="POST"
                                   onsubmit="return confirm('Delete category {{ $category->name }}? All products in this category will be uncategorized.')"
                                   class="w-full">
                                 @csrf
@@ -425,7 +416,6 @@
                                 </button>
                             </form>
                         @else
-                            {{-- Tampilkan disabled delete button dengan info --}}
                             <div class="w-full flex items-center justify-between px-4 py-3 border border-gray-300 rounded-md bg-gray-50 opacity-50 cursor-not-allowed">
                                 <div class="flex items-center">
                                     <svg class="h-5 w-5 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

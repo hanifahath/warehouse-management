@@ -4,7 +4,6 @@
 
 @section('content')
 <div class="container mx-auto px-4 py-6">
-    {{-- HEADER --}}
     <div class="flex justify-between items-center mb-6">
         <div>
             <h1 class="text-2xl font-bold text-gray-900">Edit Category</h1>
@@ -20,10 +19,8 @@
         </a>
     </div>
 
-    {{-- FORM CARD --}}
     <div class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
         
-        {{-- CARD HEADER --}}
         <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
             <h2 class="text-lg font-semibold text-gray-900">Category Information</h2>
             <div class="flex items-center mt-1">
@@ -37,15 +34,12 @@
             </div>
         </div>
 
-        {{-- FORM CONTENT --}}
         <form action="{{ route('categories.update', $category) }}" method="POST" enctype="multipart/form-data" class="p-6">
             @csrf
             @method('PUT')
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {{-- LEFT COLUMN: Basic Info --}}
                 <div class="lg:col-span-2 space-y-6">
-                    {{-- NAME --}}
                     <div>
                         <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
                             Category Name <span class="text-red-500">*</span>
@@ -69,7 +63,6 @@
                         @enderror
                     </div>
 
-                    {{-- DESCRIPTION --}}
                     <div>
                         <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
                             Description
@@ -84,7 +77,6 @@
                         @enderror
                     </div>
 
-                    {{-- CATEGORY INFO --}}
                     <div class="bg-gray-50 p-4 rounded-md border border-gray-200">
                         <h3 class="text-sm font-medium text-gray-700 mb-2">Category Details</h3>
                         <div class="grid grid-cols-2 gap-4 text-sm">
@@ -104,10 +96,8 @@
                     </div>
                 </div>
 
-                {{-- RIGHT COLUMN: Image Upload --}}
                 <div>
-                    {{-- CURRENT IMAGE --}}
-                    <div class="mb-6">
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-3">
                             Current Image
                         </label>
@@ -115,9 +105,9 @@
                         @if($category->image_path)
                             <div class="relative w-full h-48 rounded-lg overflow-hidden border border-gray-300 mb-3">
                                 <img id="current-image" 
-                                     src="{{ Storage::url($category->image_path) }}" 
-                                     alt="{{ $category->name }}"
-                                     class="w-full h-full object-cover">
+                                          src="{{ Storage::url($category->image_path) }}" 
+                                          alt="{{ $category->name }}"
+                                          class="w-full h-full object-cover current-image-fade">
                                 <a href="{{ Storage::url($category->image_path) }}" 
                                    target="_blank"
                                    class="absolute top-2 right-2 bg-blue-500 text-white rounded-full p-1 hover:bg-blue-600 focus:outline-none"
@@ -130,7 +120,7 @@
                             <div class="text-center">
                                 <button type="button" 
                                         id="remove-existing-image"
-                                        class="text-sm text-red-600 hover:text-red-800 focus:outline-none">
+                                        class="text-sm text-red-600 hover:text-red-800 focus:outline-none transition-colors duration-150">
                                     <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                     </svg>
@@ -148,20 +138,18 @@
                         @endif
                     </div>
 
-                    {{-- NEW IMAGE UPLOAD --}}
                     <div>
                         <label for="image_path" class="block text-sm font-medium text-gray-700 mb-3">
                             Upload New Image
                             <span class="text-gray-500 font-normal">(Optional)</span>
                         </label>
                         
-                        {{-- New Image Preview --}}
                         <div id="new-image-preview" class="mb-4 hidden">
                             <div class="relative w-full h-48 rounded-lg overflow-hidden border border-gray-300">
                                 <img id="preview-new-image" 
-                                     src="" 
-                                     alt="New image preview"
-                                     class="w-full h-full object-cover">
+                                          src="" 
+                                          alt="New image preview"
+                                          class="w-full h-full object-cover">
                                 <button type="button" 
                                         id="remove-new-image"
                                         class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 focus:outline-none">
@@ -173,7 +161,6 @@
                             <p class="mt-2 text-sm text-gray-500 text-center">This will replace the current image</p>
                         </div>
 
-                        {{-- Upload Area --}}
                         <div id="upload-area" 
                              class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-400 transition-colors duration-200">
                             <div class="space-y-3">
@@ -205,7 +192,6 @@
                         <p class="mt-2 text-sm text-gray-500">Recommended: 400×400 pixels, square format.</p>
                     </div>
 
-                    {{-- DANGER ZONE --}}
                     <div class="mt-8 pt-6 border-t border-red-200">
                         <h3 class="text-sm font-medium text-red-800 mb-3">Danger Zone</h3>
                         <div class="text-sm">
@@ -222,7 +208,6 @@
                 </div>
             </div>
 
-            {{-- FORM VALIDATION SUMMARY --}}
             @if($errors->any())
             <div class="mt-6 p-4 bg-red-50 border border-red-200 rounded-md">
                 <div class="flex">
@@ -247,7 +232,6 @@
             </div>
             @endif
 
-            {{-- ACTION BUTTONS --}}
             <div class="mt-8 pt-6 border-t border-gray-200 flex justify-between items-center">
                 <div>
                     <a href="{{ route('categories.show', $category) }}"
@@ -279,12 +263,30 @@
     </div>
 </div>
 
-{{-- DELETE FORM --}}
 <form id="delete-form" action="{{ route('categories.destroy', $category) }}" method="POST" class="hidden">
     @csrf
     @method('DELETE')
 </form>
 @endsection
+
+@push('styles')
+<style>
+/* Style for drag-and-drop area */
+#upload-area {
+    transition: all 0.2s ease;
+}
+
+#upload-area.drag-over {
+    border-color: #6366f1; /* indigo-500 */
+    background-color: #f5f3ff; /* indigo-50 */
+}
+
+/* Style to visually show when image is marked for removal */
+.current-image-fade {
+    transition: opacity 0.3s ease, filter 0.3s ease;
+}
+</style>
+@endpush
 
 @push('scripts')
 <script>
@@ -317,17 +319,17 @@ document.addEventListener('DOMContentLoaded', function() {
     if (uploadArea) {
         uploadArea.addEventListener('dragover', function(e) {
             e.preventDefault();
-            this.classList.add('border-indigo-500', 'bg-indigo-50');
+            this.classList.add('drag-over');
         });
         
         uploadArea.addEventListener('dragleave', function(e) {
             e.preventDefault();
-            this.classList.remove('border-indigo-500', 'bg-indigo-50');
+            this.classList.remove('drag-over');
         });
         
         uploadArea.addEventListener('drop', function(e) {
             e.preventDefault();
-            this.classList.remove('border-indigo-500', 'bg-indigo-50');
+            this.classList.remove('drag-over');
             
             const file = e.dataTransfer.files[0];
             if (file && file.type.startsWith('image/')) {

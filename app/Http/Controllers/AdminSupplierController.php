@@ -9,7 +9,6 @@ class AdminSupplierController extends Controller
 {
     public function pending()
     {
-        // Gunakan OR condition untuk handle kedua kemungkinan
         $suppliers = User::where('role', 'Supplier')
             ->where(function($query) {
                 $query->where('is_approved', false)
@@ -24,7 +23,7 @@ class AdminSupplierController extends Controller
     {
         $user->update([
             'is_approved' => true,
-            'status' => 'approved', // Update kedua kolom
+            'status' => 'approved', 
             'approved_by' => auth()->id(),
             'approved_at' => now(),
             'rejected_by' => null,
@@ -38,7 +37,7 @@ class AdminSupplierController extends Controller
     {
         $user->update([
             'is_approved' => false,
-            'status' => 'rejected', // Update kedua kolom
+            'status' => 'rejected',
             'rejected_by' => auth()->id(),
             'rejected_at' => now(),
             'approved_by' => null,

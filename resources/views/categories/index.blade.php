@@ -4,7 +4,6 @@
 
 @section('content')
 <div class="container mx-auto px-4 py-6">
-    {{-- HEADER --}}
     <div class="flex justify-between items-center mb-6">
         <div>
             <h1 class="text-2xl font-bold text-gray-900">Categories</h1>
@@ -20,10 +19,8 @@
             Add Category
         </a>
         @endcan
-
     </div>
 
-    {{-- ALERT MESSAGES --}}
     @if(session('success'))
     <div class="mb-6 bg-green-50 border-l-4 border-green-500 p-4">
         <div class="flex">
@@ -54,70 +51,61 @@
     </div>
     @endif
 
-    {{-- FILTERS CARD --}}
-<div class="bg-white p-4 rounded-lg shadow border border-gray-200 mb-6">
-    <form method="GET" class="space-y-4">
-        
-        {{-- SEARCH ROW --}}
-        <div>
-            <label class="block text-gray-700 text-sm font-medium mb-1">Search Category</label>
-            <input type="text" name="search" value="{{ request('search') }}"
-                   placeholder="Search by category name or description..."
-                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition">
-        </div>
-
-        {{-- FILTERS ROW --}}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <div class="bg-white p-4 rounded-lg shadow border border-gray-200 mb-6">
+        <form method="GET" class="space-y-4">
             
-            {{-- SORTING FILTER --}}
             <div>
-                <label class="block text-gray-700 text-sm font-medium mb-1">Sort By</label>
-                <select name="sort"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
-                    <option value="">Default (Newest First)</option>
-                    <option value="name_asc" {{ request('sort') == 'name_asc' ? 'selected' : '' }}>Name (A → Z)</option>
-                    <option value="name_desc" {{ request('sort') == 'name_desc' ? 'selected' : '' }}>Name (Z → A)</option>
-                    <option value="created_asc" {{ request('sort') == 'created_asc' ? 'selected' : '' }}>Oldest First</option>
-                    <option value="created_desc" {{ request('sort') == 'created_desc' ? 'selected' : '' }}>Newest First</option>
-                </select>
+                <label class="block text-gray-700 text-sm font-medium mb-1">Search Category</label>
+                <input type="text" name="search" value="{{ request('search') }}"
+                        placeholder="Search by category name or description..."
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition">
             </div>
 
-            {{-- PRODUCTS COUNT FILTER (Optional) --}}
-            <div>
-                <label class="block text-gray-700 text-sm font-medium mb-1">Has Products</label>
-                <select name="has_products"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
-                    <option value="">All Categories</option>
-                    <option value="yes" {{ request('has_products') == 'yes' ? 'selected' : '' }}>With Products</option>
-                    <option value="no" {{ request('has_products') == 'no' ? 'selected' : '' }}>Without Products</option>
-                </select>
-            </div>
-        </div>
-
-        {{-- ACTION BUTTONS - Di pojok kanan bawah --}}
-        <div class="flex justify-end items-center pt-3 border-t border-gray-200">
-            <div class="flex gap-2">
-                @if(request()->anyFilled(['search', 'sort', 'has_products']))
-                    <a href="{{ route('categories.index') }}"
-                       class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-medium text-sm">
-                        Reset
-                    </a>
-                @endif
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 
-                <button type="submit" 
-                        class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium text-sm">
-                    Apply Filters
-                </button>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-1">Sort By</label>
+                    <select name="sort"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                        <option value="">Default (Newest First)</option>
+                        <option value="name_asc" {{ request('sort') == 'name_asc' ? 'selected' : '' }}>Name (A → Z)</option>
+                        <option value="name_desc" {{ request('sort') == 'name_desc' ? 'selected' : '' }}>Name (Z → A)</option>
+                        <option value="created_asc" {{ request('sort') == 'created_asc' ? 'selected' : '' }}>Oldest First</option>
+                        <option value="created_desc" {{ request('sort') == 'created_desc' ? 'selected' : '' }}>Newest First</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-1">Has Products</label>
+                    <select name="has_products"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                        <option value="">All Categories</option>
+                        <option value="yes" {{ request('has_products') == 'yes' ? 'selected' : '' }}>With Products</option>
+                        <option value="no" {{ request('has_products') == 'no' ? 'selected' : '' }}>Without Products</option>
+                    </select>
+                </div>
             </div>
-        </div>
 
-    </form>
-</div>
+            <div class="flex justify-end items-center pt-3 border-t border-gray-200">
+                <div class="flex gap-2">
+                    @if(request()->anyFilled(['search', 'sort', 'has_products']))
+                        <a href="{{ route('categories.index') }}"
+                           class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-medium text-sm">
+                            Reset
+                        </a>
+                    @endif
+                    
+                    <button type="submit" 
+                            class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium text-sm">
+                        Apply Filters
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
 
-    {{-- CATEGORIES TABLE CARD --}}
     <div class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
         
-        {{-- TABLE HEADER --}}
         <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
             <h2 class="text-lg font-semibold text-gray-900">Category List</h2>
             <span class="text-sm font-medium text-gray-700">
@@ -128,7 +116,6 @@
             </th>
         </div>
 
-        {{-- TABLE --}}
         @if($categories->count() > 0)
         <div class="overflow-x-auto">
             <table class="w-full min-w-full divide-y divide-gray-200">
@@ -153,7 +140,6 @@
                     @foreach ($categories as $category)
                     <tr class="hover:bg-gray-50 transition-colors duration-150">
                         
-                        {{-- NAME --}}
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
                                 <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-md bg-indigo-100 text-indigo-800">
@@ -172,7 +158,6 @@
                             </div>
                         </td>
 
-                        {{-- DESCRIPTION --}}
                         <td class="px-6 py-4">
                             <div class="text-sm text-gray-900 max-w-xs">
                                 @if($category->description)
@@ -183,7 +168,6 @@
                             </div>
                         </td>
 
-                        {{-- CREATED AT --}}
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm text-gray-900">
                                 {{ $category->created_at->format('M d, Y') }}
@@ -194,27 +178,20 @@
                         </td>
                         
                         <td class="px-6 py-4 whitespace-nowrap">
-                            @if($category->image_path)
-                                <div class="h-10 w-10 rounded-md overflow-hidden border border-gray-200">
-                                    <img src="{{ $category->image_path }}" 
-                                    alt="{{ $category->name }}"
-                                    class="card-img-top"
-                                    style="height: 200px; object-fit: cover;">
-                                </div>
-                            @else
-                                <div class="h-10 w-10 rounded-md bg-gray-100 flex items-center justify-center">
-                                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                    </svg>
+                            @if(isset($category->image_path) && $category->image_path)
+                                <img src="{{ asset('storage/' . $category->image_path) }}" 
+                                    alt="{{ $category->name }}" 
+                                    class="w-16 h-16 object-cover rounded border border-gray-200">
+                                @else
+                                <div class="w-16 h-16 bg-gray-100 rounded border border-gray-200 flex items-center justify-center">
+                                    <span class="text-xs text-gray-500">No Image</span>
                                 </div>
                             @endif
                         </td>
 
-                        {{-- ACTIONS --}}
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <div class="flex justify-end items-center space-x-3">
                                 
-                                {{-- VIEW --}}
                                 @can('view', $category)
                                 <a href="{{ route('categories.show', $category) }}"
                                    class="text-indigo-600 hover:text-indigo-900 transition-colors"
@@ -226,7 +203,6 @@
                                 </a>
                                 @endcan
 
-                                {{-- EDIT --}}
                                 @can('update', $category)
                                 <a href="{{ route('categories.edit', $category) }}"
                                    class="text-yellow-600 hover:text-yellow-900 transition-colors"
@@ -237,7 +213,6 @@
                                 </a>
                                 @endcan
 
-                                {{-- DELETE --}}
                                 @can('delete', $category)
                                 <form method="POST" 
                                       action="{{ route('categories.destroy', $category) }}"
@@ -247,7 +222,8 @@
                                     @method('DELETE')
                                     <button type="submit"
                                             class="text-red-600 hover:text-red-900 transition-colors focus:outline-none"
-                                            title="Delete">
+                                            title="Delete"
+                                            data-category-name="the category '{{ $category->name }}'">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                         </svg>
@@ -263,7 +239,6 @@
             </table>
         </div>
         @else
-        {{-- EMPTY STATE --}}
         <div class="py-12 text-center">
             <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                 <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -290,7 +265,6 @@
         </div>
         @endif
 
-        {{-- TABLE FOOTER --}}
         @if($categories->count() > 0)
         <div class="px-6 py-4 border-t border-gray-200 bg-gray-50">
             {{ $categories->links() }}
@@ -299,27 +273,3 @@
     </div>
 </div>
 @endsection
-
-@push('scripts')
-<script>
-// Optional: Add some interactivity
-document.addEventListener('DOMContentLoaded', function() {
-    // Auto-focus search input
-    const searchInput = document.getElementById('search');
-    if (searchInput && !searchInput.value) {
-        setTimeout(() => searchInput.focus(), 100);
-    }
-    
-    // Show confirmation for delete
-    const deleteForms = document.querySelectorAll('form[onsubmit*="confirm"]');
-    deleteForms.forEach(form => {
-        form.onsubmit = function(e) {
-            const categoryName = this.querySelector('button[title="Delete"]')?.dataset?.name || 
-                               this.getAttribute('data-category-name') || 
-                               'this category';
-            return confirm(`Are you sure you want to delete ${categoryName}? This action cannot be undone.`);
-        };
-    });
-});
-</script>
-@endpush

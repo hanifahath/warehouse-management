@@ -84,11 +84,13 @@ class RestockOrder extends Model
     // ============= ATTRIBUTE ACCESSORS =============
     public function getTotalAmountAttribute(): float
     {
-        if (isset($this->attributes['total_amount'])) {
+        if (isset($this->attributes['total_amount']) && $this->attributes['total_amount'] > 0) {
             return $this->attributes['total_amount'];
         }
         
-        return $this->items->sum('subtotal');
+        return $this->items->sum(function ($item) {
+            return $item->quantity * ($item->product->cost_price ?? 0);
+        });
     }
 
     public function getTotalItemsAttribute(): int
@@ -247,19 +249,16 @@ class RestockOrder extends Model
     public static function generatePONumber(): string
     {
         $date = now()->format('Ymd');
-        
-        // Cari PO number tertinggi hari ini
+    
         $lastOrder = self::whereDate('created_at', today())
             ->orderByRaw('CAST(SUBSTRING_INDEX(po_number, "-", -1) AS UNSIGNED) DESC')
             ->first();
         
-        // Atau cara sederhana: cari berdasarkan pattern
         $lastOrder = self::where('po_number', 'like', 'PO-' . $date . '-%')
             ->orderBy('po_number', 'desc')
             ->first();
         
         if ($lastOrder) {
-            // Extract sequence number
             $parts = explode('-', $lastOrder->po_number);
             $lastSequence = (int) end($parts);
             $sequence = $lastSequence + 1;
@@ -270,17 +269,11 @@ class RestockOrder extends Model
         return 'PO-' . $date . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
     }
     
-    /**
-     * Get creator attribute (for backward compatibility)
-     */
     public function getCreatorAttribute()
     {
         return $this->manager;
     }
 
-    /**
-     * Get created_by attribute (alias)
-     */
     public function getCreatedByAttribute()
     {
         return $this->manager_id;

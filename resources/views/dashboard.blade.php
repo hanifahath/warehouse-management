@@ -191,7 +191,7 @@
                     </div>
                     <span class="text-3xl">⚠️</span>
                 </div>
-                <a href="{{ route('reports.low-stock') }}" class="text-xs text-red-600 hover:underline mt-2 block">View →</a>
+                <a href="{{ route('products.index', array_merge(request()->except('page'), ['low_stock' => true])) }}" class="text-xs text-red-600 hover:underline mt-2 block">View →</a>
             </div>
             
             <div class="bg-white rounded-lg shadow border border-gray-200 p-6">
@@ -214,7 +214,7 @@
             <div class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
                 <div class="border-b border-gray-200 px-6 py-4 flex justify-between items-center">
                     <h2 class="text-lg font-bold text-gray-900">Produk Stok Rendah</h2>
-                    <a href="{{ route('reports.low-stock') }}" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                    <a href="{{ route('products.index', array_merge(request()->except('page'), ['low_stock' => true])) }}" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
                         Lihat Semua
                     </a>
                 </div>
@@ -382,6 +382,7 @@
 
     {{-- ======================= SUPPLIER DASHBOARD ======================= --}}
     @if($role === 'supplier')
+  
         <div class="mb-6">
             <h1 class="text-2xl font-bold text-gray-900">Supplier Dashboard</h1>
             <p class="text-sm text-gray-600 mt-1">Welcome back, {{ auth()->user()->name }}</p>
